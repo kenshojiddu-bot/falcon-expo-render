@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: falcon-expo
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: FALCON_DATA_DIR
+        value: /tmp/falcon-expo
+      - key: DATABASE_URL
+        sync: false
