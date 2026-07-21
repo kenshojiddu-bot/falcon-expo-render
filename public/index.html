@@ -943,6 +943,7 @@
     const storageKey = 'falcon-expo-applications';
     const form = document.getElementById('applicationForm');
     const formStatus = document.getElementById('formStatus');
+    const emailInput = document.getElementById('email');
     const chatLauncher = document.getElementById('chatLauncher');
     const chatPanel = document.getElementById('chatPanel');
     const chatClose = document.getElementById('chatClose');
@@ -976,6 +977,12 @@
         return;
       }
 
+      if (emailInput.value.trim() && !emailInput.validity.valid) {
+        emailInput.focus();
+        setStatus('请填写有效邮箱', 'error');
+        return;
+      }
+
       const formData = new FormData(form);
       const application = Object.fromEntries(formData.entries());
       application.id = `FHE-${Date.now()}`;
@@ -995,8 +1002,8 @@
         form.reset();
         setStatus(
           localBackupSaved
-            ? `申请已记录，编号 ${application.id}。工作人员会根据您的展位和商务需求联系您。`
-            : '申请暂未保存，请改用线上页面提交或直接联系 shawn@keyi2030.com。',
+            ? `申请已记录，编号 ${application.id}。本地预览提交仅保存在当前浏览器，不会发送给展方/服务器。正式提交请使用线上地址：https://falcon-expo.onrender.com。`
+            : '申请暂未保存，请改用线上地址：https://falcon-expo.onrender.com。',
           localBackupSaved ? 'success' : 'error'
         );
         return;
@@ -1013,11 +1020,22 @@
           return response.json();
         })
         .then((result) => {
+          try {
+            const applications = readApplications();
+            if (Array.isArray(applications)) {
+              localStorage.setItem(
+                storageKey,
+                JSON.stringify(applications.filter((item) => item.id !== application.id))
+              );
+            }
+          } catch (error) {
+            // A storage cleanup failure must not turn a successful POST into an error.
+          }
           form.reset();
           setStatus(`申请已提交，编号 ${result.applicationId || application.id}。工作人员会根据表单信息联系您。`, 'success');
         })
         .catch(() => {
-          setStatus('暂时无法提交申请，请稍后重试或联系 shawn@keyi2030.com。', 'error');
+          setStatus('暂时无法提交申请，请稍后重试。', 'error');
         });
     });
 
