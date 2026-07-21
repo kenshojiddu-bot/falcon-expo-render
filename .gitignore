@@ -2,3 +2,5 @@ node_modules/
 .DS_Store
 applications.json
 .env
+.superpowers/
+tmp/
