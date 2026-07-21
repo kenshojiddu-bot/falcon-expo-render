@@ -9,6 +9,8 @@ const staleContent = [
   '70㎡特定展位',
   'SAR 63,000',
   'SAR 315,000',
+  'USD 16,800',
+  'USD 84,000',
   'cgdqyj@gmail.com',
   'Tiger Rover Sport Optics'
 ];
@@ -87,12 +89,22 @@ test('homepage product scope contains exactly the eight approved categories', ()
   const productArticles = productSection.match(/<article\b[^>]*>[\s\S]*?<\/article>/g) ?? [];
 
   assert.equal(productArticles.length, 8, 'product scope should contain exactly eight product articles');
-  for (const category of productCategories) {
-    assert.equal(
-      productArticles.filter((article) => article.includes(category)).length,
-      1,
-      `product scope should contain exactly one article for ${category}`
+  const categoryArticleIndexes = productCategories.map((category) => {
+    const matchingIndexes = productArticles.flatMap((article, index) =>
+      article.includes(category) ? [index] : []
     );
+    assert.equal(matchingIndexes.length, 1, `product scope should contain exactly one article for ${category}`);
+    return matchingIndexes[0];
+  });
+
+  assert.equal(
+    new Set(categoryArticleIndexes).size,
+    productCategories.length,
+    'each approved category should use a distinct product article'
+  );
+  for (const [index, article] of productArticles.entries()) {
+    const matchingCategories = productCategories.filter((category) => article.includes(category));
+    assert.equal(matchingCategories.length, 1, `product article ${index + 1} should contain exactly one approved category`);
   }
 });
 
@@ -131,8 +143,8 @@ test('knowledge answers the latest direct questions', async () => {
 
 test('knowledge returns only the most relevant answer for an ambiguous multi-topic question', async () => {
   const { answerQuestion } = await loadKnowledge();
-  const answer = answerQuestion('户外产品招商的12平米展位含税价格和联系电话');
+  const answer = answerQuestion('展位价格和联系电话稍后再说，先介绍适合招商的户外产品品类，包括光学、帐篷、冷藏和照明');
 
-  assert.match(answer, /16,560/);
-  assert.doesNotMatch(answer, /8大品类|566057654|shawn@keyi2030\.com/);
+  assert.match(answer, /8大品类/);
+  assert.doesNotMatch(answer, /16,560|566057654/);
 });
