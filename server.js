@@ -11,6 +11,7 @@ const app = express();
 const port = Number(process.env.PORT || 3000);
 const dataDir = process.env.FALCON_DATA_DIR || '/tmp/falcon-expo';
 const submissionsFile = path.join(dataDir, 'applications.json');
+const salonSubmissionsFile = path.join(dataDir, 'salon-registrations.json');
 const databaseUrl = process.env.DATABASE_URL;
 const pool = databaseUrl
   ? new pg.Pool({
@@ -24,6 +25,7 @@ app.use(express.urlencoded({ extended: false, limit: '64kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const requiredFields = ['company', 'contact', 'phone', 'role', 'category', 'booth'];
+const salonRequiredFields = ['name', 'phone', 'company', 'role', 'topic'];
 
 function cleanValue(value) {
   return String(value ?? '').trim().slice(0, 2000);
@@ -50,9 +52,37 @@ function normalizeApplication(body) {
   return { application, missing };
 }
 
+function normalizeSalonRegistration(body) {
+  const registration = {
+    id: `SALON-${Date.now()}-${randomUUID().slice(0, 8)}`,
+    submittedAt: new Date().toISOString(),
+    name: cleanValue(body.name),
+    company: cleanValue(body.company),
+    role: cleanValue(body.role),
+    phone: cleanValue(body.phone),
+    email: cleanValue(body.email),
+    city: cleanValue(body.city),
+    topic: cleanValue(body.topic),
+    interest: cleanValue(body.interest),
+    note: cleanValue(body.note),
+    source: 'render-web-service'
+  };
+
+  const missing = salonRequiredFields.filter((field) => !registration[field]);
+  return { registration, missing };
+}
+
 async function readApplications() {
   try {
     return JSON.parse(await readFile(submissionsFile, 'utf8'));
+  } catch {
+    return [];
+  }
+}
+
+async function readSalonRegistrations() {
+  try {
+    return JSON.parse(await readFile(salonSubmissionsFile, 'utf8'));
   } catch {
     return [];
   }
@@ -112,6 +142,58 @@ async function saveApplication(application) {
   await writeFile(submissionsFile, JSON.stringify(applications, null, 2));
 }
 
+async function saveSalonRegistration(registration) {
+  if (pool) {
+    await pool.query(`
+      create table if not exists salon_registrations (
+        id text primary key,
+        submitted_at timestamptz not null,
+        name text not null,
+        company text not null,
+        role text not null,
+        phone text not null,
+        email text,
+        city text,
+        topic text not null,
+        interest text,
+        note text,
+        source text not null,
+        raw_json jsonb not null
+      )
+    `);
+    await pool.query(
+      `
+        insert into salon_registrations (
+          id, submitted_at, name, company, role, phone, email, city,
+          topic, interest, note, source, raw_json
+        )
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      `,
+      [
+        registration.id,
+        registration.submittedAt,
+        registration.name,
+        registration.company,
+        registration.role,
+        registration.phone,
+        registration.email,
+        registration.city,
+        registration.topic,
+        registration.interest,
+        registration.note,
+        registration.source,
+        registration
+      ]
+    );
+    return;
+  }
+
+  await mkdir(dataDir, { recursive: true });
+  const registrations = await readSalonRegistrations();
+  registrations.unshift(registration);
+  await writeFile(salonSubmissionsFile, JSON.stringify(registrations, null, 2));
+}
+
 app.get('/api/health', (_request, response) => {
   response.json({ ok: true, service: 'falcon-expo-render' });
 });
@@ -125,6 +207,21 @@ app.post('/api/applications', async (request, response) => {
 
   await saveApplication(application);
   response.status(201).json({ ok: true, applicationId: application.id });
+});
+
+app.get('/api/salon-health', (_request, response) => {
+  response.json({ ok: true, service: 'falcon-expo-salon' });
+});
+
+app.post('/api/salon-registrations', async (request, response) => {
+  const { registration, missing } = normalizeSalonRegistration(request.body);
+  if (missing.length) {
+    response.status(400).json({ ok: false, error: 'missing_required_fields', missing });
+    return;
+  }
+
+  await saveSalonRegistration(registration);
+  response.status(201).json({ ok: true, registrationId: registration.id });
 });
 
 app.get('*', (_request, response) => {
