@@ -308,6 +308,13 @@
       object-fit: cover;
     }
 
+    .product-note {
+      margin: -6px 0 14px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
     .product-scope-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -473,6 +480,7 @@
 
     .form-status {
       min-height: 20px;
+      scroll-margin-bottom: 220px;
       font-weight: 800;
     }
 
@@ -529,7 +537,7 @@
       position: fixed;
       z-index: 40;
       right: max(10px, calc((100vw - 430px) / 2 + 10px));
-      bottom: calc(12px + env(safe-area-inset-bottom));
+      bottom: max(16px, env(safe-area-inset-bottom));
       width: min(calc(100vw - 20px), 410px);
       max-height: min(78vh, 620px);
       display: none;
@@ -784,6 +792,7 @@
         <figure class="product-visual">
           <img src="falcon-expo-assets/product-scope.jpg" alt="光学、帐篷、冷藏、照明与保温饮具产品拼图" loading="lazy">
         </figure>
+        <p class="product-note">图片为部分产品视觉示例，完整招商范围以八类产品卡为准</p>
         <div class="product-scope-grid">
           <article class="product-scope-card">光学设备</article>
           <article class="product-scope-card">车顶帐篷</article>
@@ -889,23 +898,23 @@
           <h2>联系方式</h2>
         </div>
         <div class="contact-grid">
-          <article class="contact-card"><strong>官方与展览网站</strong><p>sfc.org.sa<br>fhe.sfc.org.sa</p></article>
+          <article class="contact-card"><strong>官方与展览网站</strong><p><a href="https://sfc.org.sa" target="_blank" rel="noopener">sfc.org.sa</a><br><a href="https://fhe.sfc.org.sa" target="_blank" rel="noopener">fhe.sfc.org.sa</a></p></article>
           <article class="contact-card"><strong>中国区官方合作伙伴</strong><p>柯亦科技</p><span>邮箱：shawn@keyi2030.com<br>陆女士：+86 18628342749<br>陈先生（沙特）：+966 566057654</span></article>
         </div>
       </section>
     </main>
   </div>
 
-  <button class="chat-launcher" id="chatLauncher" type="button" aria-label="打开猎鹰展AI问答">
+  <button class="chat-launcher" id="chatLauncher" type="button" aria-label="打开猎鹰展AI问答" aria-expanded="false">
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 12a8 8 0 0 1-8 8H7l-4 2 1.5-4.5A8 8 0 1 1 21 12Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
     问猎鹰展
   </button>
 
-  <aside class="chat-panel" id="chatPanel" aria-label="猎鹰展AI问答弹窗">
+  <aside class="chat-panel" id="chatPanel" role="dialog" aria-modal="false" aria-labelledby="chatTitle">
     <header class="chat-header">
       <div class="chat-title">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 4 8l8 5 8-5-8-5ZM4 14l8 5 8-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <div><strong>猎鹰展 AI 顾问</strong><span>基于最新版2026招商手册与产品资料</span></div>
+        <div><strong id="chatTitle">猎鹰展 AI 顾问</strong><span>基于最新版2026招商手册与产品资料</span></div>
       </div>
       <button class="chat-close" id="chatClose" type="button" aria-label="关闭聊天">×</button>
     </header>
@@ -971,13 +980,24 @@
       application.id = `FHE-${Date.now()}`;
       application.submittedAt = new Date().toISOString();
 
-      const applications = readApplications();
-      applications.unshift(application);
-      localStorage.setItem(storageKey, JSON.stringify(applications));
+      let localBackupSaved = false;
+      try {
+        const applications = readApplications();
+        applications.unshift(application);
+        localStorage.setItem(storageKey, JSON.stringify(applications));
+        localBackupSaved = true;
+      } catch (error) {
+        localBackupSaved = false;
+      }
 
       if (location.protocol === 'file:') {
         form.reset();
-        setStatus(`申请已记录，编号 ${application.id}。工作人员会根据您的展位和商务需求联系您。`, 'success');
+        setStatus(
+          localBackupSaved
+            ? `申请已记录，编号 ${application.id}。工作人员会根据您的展位和商务需求联系您。`
+            : '申请暂未保存，请改用线上页面提交或直接联系 shawn@keyi2030.com。',
+          localBackupSaved ? 'success' : 'error'
+        );
         return;
       }
 
@@ -996,19 +1016,27 @@
           setStatus(`申请已提交，编号 ${result.applicationId || application.id}。工作人员会根据表单信息联系您。`, 'success');
         })
         .catch(() => {
-          setStatus('暂时无法提交到服务器。您的信息已保存在当前浏览器，可稍后重试或联系 shawn@keyi2030.com。', 'error');
+          setStatus('暂时无法提交申请，请稍后重试或联系 shawn@keyi2030.com。', 'error');
         });
     });
 
     function openChat() {
+      if (formStatus.textContent.trim() && formStatus.getClientRects().length) {
+        const rect = formStatus.getBoundingClientRect();
+        const inViewport = rect.top < window.innerHeight && rect.bottom > 0;
+        if (inViewport) formStatus.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }
       chatPanel.classList.add('open');
       chatLauncher.style.display = 'none';
+      chatLauncher.setAttribute('aria-expanded', 'true');
       setTimeout(() => chatInput.focus(), 120);
     }
 
     function closeChat() {
       chatPanel.classList.remove('open');
       chatLauncher.style.display = 'inline-flex';
+      chatLauncher.setAttribute('aria-expanded', 'false');
+      chatLauncher.focus();
     }
 
     function appendMessage(role, text) {
@@ -1033,6 +1061,9 @@
 
     chatLauncher.addEventListener('click', openChat);
     chatClose.addEventListener('click', closeChat);
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && chatPanel.classList.contains('open')) closeChat();
+    });
     chatForm.addEventListener('submit', (event) => {
       event.preventDefault();
       ask(chatInput.value);
