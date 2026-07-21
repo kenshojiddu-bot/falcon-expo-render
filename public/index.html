@@ -480,6 +480,7 @@
 
     .form-status {
       min-height: 20px;
+      scroll-margin-top: 24px;
       scroll-margin-bottom: 220px;
       font-weight: 800;
     }
@@ -1021,7 +1022,7 @@
     });
 
     function openChat() {
-      if (formStatus.textContent.trim()) formStatus.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      if (formStatus.textContent.trim()) formStatus.scrollIntoView({ block: 'start', behavior: 'smooth' });
       chatPanel.classList.add('open');
       chatLauncher.style.display = 'none';
       chatLauncher.setAttribute('aria-expanded', 'true');
