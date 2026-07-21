@@ -35,9 +35,7 @@
     body {
       margin: 0;
       min-height: 100vh;
-      background:
-        radial-gradient(circle at 50% -80px, rgba(184, 137, 46, 0.22), transparent 320px),
-        linear-gradient(180deg, #111722, #1b202b);
+      background: #171817;
       color: var(--ink);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
       letter-spacing: 0;
@@ -83,8 +81,8 @@
       position: absolute;
       inset: 0;
       background:
-        linear-gradient(180deg, rgba(10, 12, 16, 0.16), rgba(10, 12, 16, 0.52) 48%, rgba(10, 12, 16, 0.92)),
-        url("falcon-expo-assets/hero.png") center / cover no-repeat;
+        linear-gradient(180deg, rgba(8, 9, 10, 0.42), rgba(8, 9, 10, 0.58) 48%, rgba(8, 9, 10, 0.96)),
+        url("falcon-expo-assets/hero-falcon.jpg") center / cover no-repeat;
       transform: scale(1.02);
     }
 
@@ -292,6 +290,42 @@
       color: var(--muted);
       font-size: 13px;
       line-height: 1.62;
+    }
+
+    .product-visual {
+      margin: 0 0 14px;
+      overflow: hidden;
+      border: 1px solid #b8892e;
+      border-radius: var(--radius);
+      background: #171817;
+      aspect-ratio: 16 / 11;
+    }
+
+    .product-visual img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .product-scope-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .product-scope-card {
+      display: grid;
+      align-content: center;
+      min-height: 68px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      padding: 10px;
+      color: #111827;
+      font-size: 14px;
+      font-weight: 850;
+      line-height: 1.35;
     }
 
     .zone-map {
@@ -543,8 +577,8 @@
     .chat-close {
       display: grid;
       place-items: center;
-      width: 36px;
-      height: 36px;
+      width: 44px;
+      height: 44px;
       border: 1px solid rgba(255, 255, 255, 0.18);
       border-radius: var(--radius);
       background: rgba(255, 255, 255, 0.08);
@@ -568,7 +602,7 @@
     }
 
     .quick-questions button {
-      min-height: 32px;
+      min-height: 44px;
       border: 1px solid #d7deea;
       border-radius: var(--radius);
       background: #ffffff;
@@ -634,7 +668,7 @@
       .page-shell {
         margin-top: 18px;
         margin-bottom: 18px;
-        border-radius: 18px;
+        border-radius: var(--radius);
         overflow: hidden;
       }
 
@@ -674,8 +708,9 @@
         <p class="section-lead">由沙特猎鹰俱乐部主办，融合千年贝都因文化与现代科技，为全球高端品牌连接中东核心消费与决策圈层。</p>
         <div class="stats-grid">
           <div class="stat-card"><strong>70万+</strong><span>往届年度游客总数</span></div>
-          <div class="stat-card"><strong>1400+</strong><span>优质参展商与合作品牌</span></div>
-          <div class="stat-card"><strong>47国</strong><span>全球参与国家</span></div>
+          <div class="stat-card"><strong>1,400+</strong><span>优质参展商与合作品牌</span></div>
+          <div class="stat-card"><strong>47个国家</strong><span>全球参与国家</span></div>
+          <div class="stat-card"><strong>28+专业领域</strong><span>多元产业协同展示</span></div>
           <div class="stat-card"><strong>3.98亿+</strong><span>社交媒体曝光量</span></div>
         </div>
       </section>
@@ -697,25 +732,25 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 8h18M8 21V8M16 21V8M5 4h14v4H5z" stroke="#b8892e" stroke-width="2" stroke-linejoin="round"/></svg>
           <h2>展区与展位</h2>
         </div>
-        <p class="section-lead">2026年展会规划超过16万平方米展厅与广场空间，按品牌展示、国家展区、赞助、活动体验和拍卖服务分区。</p>
+        <p class="section-lead">2026年展览规模超过160,000平方米；2025年展览面积达197,411+平方米。空间按品牌展示、国家展区、赞助、活动体验和拍卖服务分区。</p>
         <div class="zone-map" aria-label="展区规划">
           <div class="zone">主展区<small>标准展位集中展示</small></div>
           <div class="zone">中国展区<small>中国企业专属形象</small></div>
           <div class="zone">赞助区<small>顶级品牌专属空间</small></div>
-          <div class="zone">活动表演区<small>猎鹰表演与互动体验</small></div>
-          <div class="zone">刀具与VIP区<small>高端洽谈空间</small></div>
-          <div class="zone">全球拍卖服务<small>珍稀猎鹰与藏品</small></div>
+          <div class="zone">活动与表演区<small>猎鹰表演与互动体验</small></div>
+          <div class="zone">刀具与VIP专区<small>高端洽谈空间</small></div>
+          <div class="zone">全球拍卖服务区<small>珍稀猎鹰与藏品</small></div>
         </div>
         <div class="price-grid" style="margin-top: 10px;">
           <article class="price-card">
-            <strong>14㎡标准展位</strong>
-            <b>SAR 63,000</b>
-            <span>约 USD 16,800 · 标准配置</span>
+            <strong>9㎡标准展位</strong>
+            <b>USD 10,800</b>
+            <span>含VAT USD 12,420 · 标准配置</span>
           </article>
           <article class="price-card">
-            <strong>70㎡特定展位</strong>
-            <b>SAR 315,000</b>
-            <span>约 USD 84,000 · 标准配置</span>
+            <strong>12㎡标准展位</strong>
+            <b>USD 14,400</b>
+            <span>含VAT USD 16,560 · 标准配置</span>
           </article>
         </div>
         <div class="badge-row">
@@ -735,7 +770,29 @@
           <article class="category-card"><strong>高端奢侈品与生活方式</strong><p>腕表、珠宝、皮具、定制服饰、豪车、私人飞机、游艇、奢华旅游、高端酒店与度假村。</p></article>
           <article class="category-card"><strong>户外装备与前沿科技</strong><p>狩猎装备、越野车辆、户外服饰、光学仪器、智能导航、穿戴设备、露营装备与便携能源。</p></article>
           <article class="category-card"><strong>传统工艺与文化艺术</strong><p>传统刀具、书法绘画、手工地毯、特色首饰、非遗文化及民俗艺术展演相关产品服务。</p></article>
-          <article class="category-card"><strong>金融投资与高端食品</strong><p>私人银行、家族财富管理、跨境投资咨询、全球特色美食、有机生态食品、精品咖啡与茶饮。</p></article>
+          <article class="category-card"><strong>高端金融与投资服务</strong><p>私人银行、家族财富管理、跨境投资咨询、保险、资产配置与专业顾问服务。</p></article>
+          <article class="category-card"><strong>臻选食品与奢华饮品</strong><p>全球特色美食、有机生态食品、精品咖啡、茶饮及面向高端消费场景的饮品。</p></article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="product-scope-title">
+        <div class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16v12H4zM8 7V4h8v3M9 12h6" stroke="#b8892e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <h2 id="product-scope-title">产品招商范围</h2>
+        </div>
+        <p class="section-lead">资料覆盖100款精选产品方向、8大品类，重点关注国际认证能力与高温、风沙等沙漠环境适配表现。</p>
+        <figure class="product-visual">
+          <img src="falcon-expo-assets/product-scope.jpg" alt="光学、帐篷、冷藏、照明与保温饮具产品拼图" loading="lazy">
+        </figure>
+        <div class="product-scope-grid">
+          <article class="product-scope-card">光学设备</article>
+          <article class="product-scope-card">车顶帐篷</article>
+          <article class="product-scope-card">露营装备</article>
+          <article class="product-scope-card">冷藏设备</article>
+          <article class="product-scope-card">户外照明</article>
+          <article class="product-scope-card">烧烤工具</article>
+          <article class="product-scope-card">储水与户外家具</article>
+          <article class="product-scope-card">保温饮具</article>
         </div>
       </section>
 
@@ -771,7 +828,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h5" stroke="#b8892e" stroke-width="2" stroke-linecap="round"/></svg>
           <h2>申请展会表单</h2>
         </div>
-        <p class="section-lead">提交后工作人员可根据您的品类、展位和商务对接需求进一步沟通。上线后表单将提交到 Render 免费服务接口，同时在当前浏览器保留一份记录。</p>
+        <p class="section-lead">提交后工作人员会根据您的品类、展位和商务需求联系您。</p>
         <form class="application-form" id="applicationForm" novalidate>
           <div class="field"><label for="company">公司名称 *</label><input id="company" name="company" autocomplete="organization" required></div>
           <div class="field"><label for="contact">联系人 *</label><input id="contact" name="contact" autocomplete="name" required></div>
@@ -805,8 +862,8 @@
             <label for="booth">展位 / 赞助意向 *</label>
             <select id="booth" name="booth" required>
               <option value="">请选择</option>
-              <option>14㎡标准展位</option>
-              <option>70㎡特定展位</option>
+              <option>9㎡标准展位</option>
+              <option>12㎡标准展位</option>
               <option>中国展区</option>
               <option>钻石赞助商</option>
               <option>铂金赞助商</option>
@@ -817,7 +874,7 @@
           </div>
           <div class="field"><label for="needs">商务对接需求</label><textarea id="needs" name="needs" placeholder="例如：希望对接沙特渠道商、政府项目、投资机构或高净值客户"></textarea></div>
           <div class="field"><label for="note">备注</label><textarea id="note" name="note" placeholder="补充产品、预算、团队人数或参展目标"></textarea></div>
-          <p class="required-note">* 为必填项。本地 file 预览时只保存在浏览器；Render 上线后会提交到服务器接口。</p>
+          <p class="required-note">* 为必填项。请准确填写联系方式，便于工作人员后续沟通。</p>
           <button class="submit-button" type="submit">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 12 5 5L20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
             提交申请
@@ -833,7 +890,7 @@
         </div>
         <div class="contact-grid">
           <article class="contact-card"><strong>官方与展览网站</strong><p>sfc.org.sa<br>fhe.sfc.org.sa</p></article>
-          <article class="contact-card"><strong>中国区官方合作伙伴</strong><p>柯亦科技</p><span>邮箱：cgdqyj@gmail.com<br>电话：+86 18628342749</span></article>
+          <article class="contact-card"><strong>中国区官方合作伙伴</strong><p>柯亦科技</p><span>邮箱：shawn@keyi2030.com<br>陆女士：+86 18628342749<br>陈先生（沙特）：+966 566057654</span></article>
         </div>
       </section>
     </main>
@@ -920,7 +977,7 @@
 
       if (location.protocol === 'file:') {
         form.reset();
-        setStatus(`申请已记录，编号 ${application.id}。本地 file 预览不会发送到服务器，Render 上线后会提交到接口。`, 'success');
+        setStatus(`申请已记录，编号 ${application.id}。工作人员会根据您的展位和商务需求联系您。`, 'success');
         return;
       }
 
