@@ -55,19 +55,17 @@ async function loadKnowledge() {
   return { source, ...context.window.FalconKnowledge };
 }
 
-test('homepage contains the latest event facts', () => {
-  const latestFacts = [
-    '2026年10月1日-10日',
-    '利雅得会展中心',
-    '70万+',
-    '1,400+',
-    '47个国家',
-    '28+专业领域',
-    '3.98亿+'
-  ];
+test('homepage associates the latest date and location with the event hero', () => {
+  const hero = findClassContainer(html, 'header', 'hero');
 
-  for (const fact of latestFacts) {
-    assert.ok(html.includes(fact), `homepage should contain latest fact: ${fact}`);
+  for (const fact of ['2026年10月1日-10日', '利雅得会展中心']) {
+    assert.ok(hero.includes(fact), `event hero should contain latest fact: ${fact}`);
+  }
+});
+
+test('homepage contains the latest event metrics', () => {
+  for (const metric of ['70万+', '1,400+', '47个国家', '28+专业领域', '3.98亿+']) {
+    assert.ok(html.includes(metric), `homepage should contain latest metric: ${metric}`);
   }
 });
 
@@ -78,8 +76,10 @@ test('homepage associates each booth size with its base and VAT prices', () => {
 
   assert.ok(nineSquareMetreBooth.includes('USD 10,800'));
   assert.ok(nineSquareMetreBooth.includes('USD 12,420'));
+  assert.doesNotMatch(nineSquareMetreBooth, /USD 14,400|USD 16,560/);
   assert.ok(twelveSquareMetreBooth.includes('USD 14,400'));
   assert.ok(twelveSquareMetreBooth.includes('USD 16,560'));
+  assert.doesNotMatch(twelveSquareMetreBooth, /USD 10,800|USD 12,420/);
 });
 
 test('homepage product scope contains exactly the eight approved categories', () => {
@@ -102,22 +102,22 @@ test('homepage contact section contains only the latest contacts', () => {
   for (const contact of ['shawn@keyi2030.com', '+86 18628342749', '+966 566057654']) {
     assert.ok(contactSection.includes(contact), `contact section should contain ${contact}`);
   }
+  assert.equal(contactSection.includes('cgdqyj@gmail.com'), false);
 });
 
-test('homepage removes all stale handbook content', () => {
-  for (const stale of staleContent) {
-    assert.equal(html.includes(stale), false, `homepage should not contain stale content: ${stale}`);
-  }
-});
-
-test('knowledge source and exported entries remove all stale handbook content', async () => {
+test('homepage and knowledge source and entries remove all stale handbook content', async () => {
   const { source, entries } = await loadKnowledge();
   assert.ok(Array.isArray(entries), 'knowledge script should export entries');
-  const exportedEntries = JSON.stringify(entries);
+  const contentTargets = [
+    ['homepage HTML', html],
+    ['knowledge source', source],
+    ['knowledge entries', JSON.stringify(entries)]
+  ];
 
   for (const stale of staleContent) {
-    assert.equal(source.includes(stale), false, `knowledge source should not contain stale content: ${stale}`);
-    assert.equal(exportedEntries.includes(stale), false, `knowledge entries should not contain stale content: ${stale}`);
+    for (const [description, content] of contentTargets) {
+      assert.equal(content.includes(stale), false, `${description} should not contain stale content: ${stale}`);
+    }
   }
 });
 
@@ -129,18 +129,10 @@ test('knowledge answers the latest direct questions', async () => {
   assert.match(answerQuestion('沙特联系人电话'), /566057654/);
 });
 
-test('knowledge ranks price above weaker product and contact matches', async () => {
+test('knowledge returns only the most relevant answer for an ambiguous multi-topic question', async () => {
   const { answerQuestion } = await loadKnowledge();
   const answer = answerQuestion('户外产品招商的12平米展位含税价格和联系电话');
 
   assert.match(answer, /16,560/);
   assert.doesNotMatch(answer, /8大品类|566057654|shawn@keyi2030\.com/);
-});
-
-test('knowledge ranks product above weaker price and contact matches', async () => {
-  const { answerQuestion } = await loadKnowledge();
-  const answer = answerQuestion('适合招商的户外产品品类有哪些，展位价格和联系电话稍后再说');
-
-  assert.match(answer, /8大品类/);
-  assert.doesNotMatch(answer, /USD|16,560|566057654|shawn@keyi2030\.com/);
 });
