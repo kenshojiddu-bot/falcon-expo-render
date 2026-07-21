@@ -4,3 +4,4 @@ applications.json
 .env
 .superpowers/
 tmp/
+.worktrees/
