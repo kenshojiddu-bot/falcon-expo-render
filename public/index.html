@@ -848,16 +848,16 @@
     <header class="chat-header">
       <div class="chat-title">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 4 8l8 5 8-5-8-5ZM4 14l8 5 8-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <div><strong>猎鹰展 AI 顾问</strong><span>基于招商手册的本地问答</span></div>
+        <div><strong>猎鹰展 AI 顾问</strong><span>基于最新版2026招商手册与产品资料</span></div>
       </div>
       <button class="chat-close" id="chatClose" type="button" aria-label="关闭聊天">×</button>
     </header>
     <div class="chat-body" id="chatBody">
-      <div class="message agent">您好，我可以回答 2026 年沙特国际猎鹰与狩猎展的时间地点、展位价格、适合品类、赞助方案和申请流程。您想先了解哪一块？</div>
+      <div class="message agent">您好，我可以基于最新版2026招商手册与产品资料，回答沙特国际猎鹰与狩猎展的时间地点、展位价格、适合品类、赞助方案和申请流程。您想先了解哪一块？</div>
       <div class="quick-questions" id="quickQuestions">
         <button type="button">展会时间地点</button>
         <button type="button">展位价格</button>
-        <button type="button">适合哪些品类</button>
+        <button type="button">产品招商范围</button>
         <button type="button">赞助方案</button>
         <button type="button">申请流程</button>
         <button type="button">商务对接</button>
@@ -871,6 +871,7 @@
     </form>
   </aside>
 
+  <script src="falcon-knowledge.js"></script>
   <script>
     const storageKey = 'falcon-expo-applications';
     const form = document.getElementById('applicationForm');
@@ -882,41 +883,6 @@
     const chatForm = document.getElementById('chatForm');
     const chatInput = document.getElementById('chatInput');
     const quickQuestions = document.getElementById('quickQuestions');
-
-    const knowledge = [
-      {
-        keywords: ['时间', '日期', '什么时候', '几号', '地点', '哪里', '地址'],
-        answer: '2026年沙特国际猎鹰与狩猎展将于2026年10月1日-10日在沙特阿拉伯利雅得会展中心举行。展会主题是“在传统与创新之间”。'
-      },
-      {
-        keywords: ['价格', '多少钱', '费用', '展位', '14', '70'],
-        answer: '手册中的2026年参考价为：14㎡标准展位 SAR 63,000，约 USD 16,800；70㎡特定展位 SAR 315,000，约 USD 84,000。价格仅供参考，最终以合同和官方确认为准。'
-      },
-      {
-        keywords: ['品类', '适合', '招商', '产品', '行业'],
-        answer: '重点招商品类包括高端腕表、珠宝、皮具、豪车、私人飞机、游艇、奢华旅游、狩猎装备、越野车辆、户外服饰、光学仪器、智能导航、穿戴设备、传统刀具、书法绘画、手工地毯、私人银行、家族财富管理、有机食品、精品咖啡与茶饮等。'
-      },
-      {
-        keywords: ['赞助', '钻石', '铂金', '黄金', '供应商', '冠名'],
-        answer: '赞助合作包含钻石赞助商、铂金赞助商、黄金赞助商和官方供应商。权益方向包括冠名权、VIP包厢或席位、高层晚宴、核心区品牌露出、线上线下媒体曝光和官方认证背书。'
-      },
-      {
-        keywords: ['流程', '申请', '参展', '步骤', '怎么报名'],
-        answer: '参展流程共6步：1.提交申请；2.资质审核与合同签订；3.费用支付与筹备启动；4.展前全案准备；5.展会现场运营；6.展后跟进与评估。您可以先填写页面底部申请表。'
-      },
-      {
-        keywords: ['商务', '对接', '政府', '考察', '客户', '买家'],
-        answer: 'VIP展商和特邀买家可获得一对一商务洽谈、政府与企业对接、投资环境考察和定制化商务行程服务，适合希望对接沙特渠道、政府资源、国企龙头或高净值客户的企业。'
-      },
-      {
-        keywords: ['规模', '数据', '曝光', '观众', '参展商'],
-        answer: '往届展会数据包括70万+游客、1400+参展商与合作品牌、47个参与国家，以及3.98亿+社交媒体曝光量。展会规划面积超过16万平方米。'
-      },
-      {
-        keywords: ['联系', '电话', '邮箱', '官网', '网站'],
-        answer: '官方与展览网站：sfc.org.sa、fhe.sfc.org.sa。中国区官方合作伙伴：柯亦科技，邮箱 cgdqyj@gmail.com，电话 +86 18628342749。'
-      }
-    ];
 
     function readApplications() {
       try {
@@ -973,7 +939,7 @@
           setStatus(`申请已提交，编号 ${result.applicationId || application.id}。工作人员会根据表单信息联系您。`, 'success');
         })
         .catch(() => {
-          setStatus('暂时无法提交到服务器。您的信息已保存在当前浏览器，可稍后重试或联系 cgdqyj@gmail.com。', 'error');
+          setStatus('暂时无法提交到服务器。您的信息已保存在当前浏览器，可稍后重试或联系 shawn@keyi2030.com。', 'error');
         });
     });
 
@@ -997,10 +963,7 @@
     }
 
     function answerQuestion(question) {
-      const normalized = question.toLowerCase();
-      const hit = knowledge.find((item) => item.keywords.some((keyword) => normalized.includes(keyword.toLowerCase())));
-      if (hit) return hit.answer;
-      return '这个问题我还没有在招商手册中直接匹配到。您可以先填写页面底部申请表，或联系中国区官方合作伙伴：cgdqyj@gmail.com / +86 18628342749，工作人员可以进一步确认。';
+      return window.FalconKnowledge.answerQuestion(question);
     }
 
     function ask(question) {
