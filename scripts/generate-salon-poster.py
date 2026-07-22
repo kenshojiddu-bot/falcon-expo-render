@@ -13,7 +13,7 @@ FONT_PATH = "/System/Library/Fonts/PingFang.ttc"
 
 FALCON_SOURCE = ASSETS / "hero-falcon.jpg"
 REGISTRATION_SOURCE = ASSETS / "salon-expo.jpg"
-# Unsplash source: https://unsplash.com/photos/1470337458703-46ad1756a187
+# Wikimedia Commons: https://commons.wikimedia.org/wiki/File:Maotai_-_Kweichow_Moutai_Distillery_China,_Flasche_(2).jpg
 MOUTAI_SOURCE = ASSETS / "poster-moutai-background.png"
 # Unsplash source: https://unsplash.com/photos/1569263979104-865ab7cd8d13
 SEA_FISHING_SOURCE = ASSETS / "poster-sea-fishing-background.png"
@@ -433,7 +433,7 @@ def make_theme_posters():
         MOUTAI_SOURCE,
         MOUTAI_OUTPUT,
         ("精品东方", "醇香世界"),
-        "精品茅台高端品鉴之夜",
+        "精品茅台 · 酱香品鉴之夜",
         GOLD,
         GOLD,
         CRIMSON,
