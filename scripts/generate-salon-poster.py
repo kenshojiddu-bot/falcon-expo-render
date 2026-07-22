@@ -49,16 +49,17 @@ def draw_wrapped(draw, position, text, text_font, fill, max_width, line_gap):
     return y
 
 
-def cover_crop(image, target_size, focus_x=0.64):
+def cover_crop(image, target_size, focus_x=0.64, focus_y=0.75, zoom=1.25):
     target_width, target_height = target_size
-    scale = max(target_width / image.width, target_height / image.height)
+    scale = max(target_width / image.width, target_height / image.height) * zoom
     resized = image.resize(
         (round(image.width * scale), round(image.height * scale)),
         Image.Resampling.LANCZOS,
     )
     max_left = max(0, resized.width - target_width)
     left = round(max_left * focus_x)
-    top = max(0, (resized.height - target_height) // 2)
+    max_top = max(0, resized.height - target_height)
+    top = round(max_top * focus_y)
     return resized.crop((left, top, left + target_width, top + target_height))
 
 
