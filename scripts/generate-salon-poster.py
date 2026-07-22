@@ -15,7 +15,7 @@ FALCON_SOURCE = ASSETS / "hero-falcon.jpg"
 REGISTRATION_SOURCE = ASSETS / "salon-expo.jpg"
 # Unsplash source: https://unsplash.com/photos/1470337458703-46ad1756a187
 MOUTAI_SOURCE = ASSETS / "poster-moutai-background.png"
-# Wikimedia Commons: https://commons.wikimedia.org/wiki/File:Fishing_Boat_Waves_Devaneri_Mahabalipuram_Sep22_A7C_02637.jpg
+# Unsplash source: https://unsplash.com/photos/1569263979104-865ab7cd8d13
 SEA_FISHING_SOURCE = ASSETS / "poster-sea-fishing-background.png"
 
 QR_OUTPUT = ASSETS / "salon-registration-qr.png"
