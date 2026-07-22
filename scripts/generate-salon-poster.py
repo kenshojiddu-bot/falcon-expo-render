@@ -12,7 +12,7 @@ REGISTRATION_URL = "https://falcon-expo.onrender.com/salon.html"
 FONT_PATH = "/System/Library/Fonts/PingFang.ttc"
 
 FALCON_SOURCE = ASSETS / "hero-falcon.jpg"
-REGISTRATION_SOURCE = ASSETS / "poster-sea-fishing-background.png"
+REGISTRATION_SOURCE = ASSETS / "poster-registration-sunset-ship-background.jpg"
 # Wikimedia Commons: https://commons.wikimedia.org/wiki/File:Maotai_-_Kweichow_Moutai_Distillery_China,_Flasche_(2).jpg
 MOUTAI_SOURCE = ASSETS / "poster-moutai-background.png"
 # Unsplash source: https://unsplash.com/photos/1569263979104-865ab7cd8d13
@@ -301,7 +301,7 @@ def draw_flow_node(draw, x, y, number, label, width):
 def make_registration_poster(qr_image):
     poster = prepare_background(
         REGISTRATION_SOURCE,
-        focus_x=0.86,
+        focus_x=0.5,
         focus_y=0.5,
         zoom=1.0,
         saturation=0.82,
