@@ -12,7 +12,7 @@ REGISTRATION_URL = "https://falcon-expo.onrender.com/salon.html"
 FONT_PATH = "/System/Library/Fonts/PingFang.ttc"
 
 FALCON_SOURCE = ASSETS / "hero-falcon.jpg"
-REGISTRATION_SOURCE = ASSETS / "salon-expo.jpg"
+REGISTRATION_SOURCE = ASSETS / "poster-sea-fishing-background.png"
 # Wikimedia Commons: https://commons.wikimedia.org/wiki/File:Maotai_-_Kweichow_Moutai_Distillery_China,_Flasche_(2).jpg
 MOUTAI_SOURCE = ASSETS / "poster-moutai-background.png"
 # Unsplash source: https://unsplash.com/photos/1569263979104-865ab7cd8d13
