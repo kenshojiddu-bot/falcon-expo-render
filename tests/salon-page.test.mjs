@@ -206,13 +206,6 @@ async function runSalonSubmission() {
     }
   };
   locationValue = locationObject;
-  const window = new Proxy({ location: locationObject }, {
-    set(target, property, value) {
-      if (property === 'location') locationChanged = true;
-      target[property] = value;
-      return true;
-    }
-  });
   const documentElements = {
     status,
     successPanel
@@ -260,14 +253,45 @@ async function runSalonSubmission() {
   };
   class FormDataMock {
     constructor(target) {
+      if (target !== form) throw new TypeError('FormData must be constructed from #salonForm');
       this.target = target;
     }
 
     entries() {
-      return Object.entries(values);
+      return Object.keys(values).map((name) => [name, this.target.elements[name].value]);
     }
   }
-  const sandbox = { document, fetch, FormData: FormDataMock, localStorage, window, setTimeout, clearTimeout };
+  let nextTimerId = 1;
+  const timerQueue = new Map();
+  function controlledSetTimeout(callback, delay, ...args) {
+    if (typeof callback !== 'function') throw new TypeError('timer callback must be a function');
+    const timerId = nextTimerId;
+    nextTimerId += 1;
+    timerQueue.set(timerId, { callback, delay, args });
+    return timerId;
+  }
+  function controlledClearTimeout(timerId) {
+    timerQueue.delete(timerId);
+  }
+  async function runQueuedTimers() {
+    let executed = 0;
+    while (timerQueue.size > 0) {
+      assert.ok(executed < 20, 'salon script should not schedule an unbounded timer chain');
+      const [timerId, timer] = timerQueue.entries().next().value;
+      timerQueue.delete(timerId);
+      await timer.callback(...timer.args);
+      await flushAsyncWork();
+      executed += 1;
+    }
+  }
+  const sandbox = {
+    document,
+    fetch,
+    FormData: FormDataMock,
+    localStorage,
+    setTimeout: controlledSetTimeout,
+    clearTimeout: controlledClearTimeout
+  };
   Object.defineProperty(sandbox, 'location', {
     configurable: true,
     get() {
@@ -279,7 +303,20 @@ async function runSalonSubmission() {
     }
   });
 
-  vm.runInNewContext(inlineScriptSource(html, 'salonForm'), sandbox);
+  const context = vm.createContext(sandbox);
+  vm.runInContext('globalThis.window = globalThis; globalThis.self = globalThis;', context, {
+    timeout: 1000
+  });
+  assert.equal(
+    vm.runInContext(
+      'window === globalThis && self === globalThis && window.document === document && window.fetch === fetch',
+      context,
+      { timeout: 1000 }
+    ),
+    true,
+    'browser globals should share one global object'
+  );
+  vm.runInContext(inlineScriptSource(html, 'salonForm'), context, { timeout: 1000 });
   assert.equal(typeof formHandlers.submit, 'function', 'salon form should register a submit handler');
   await formHandlers.submit({
     preventDefault() {
@@ -287,6 +324,7 @@ async function runSalonSubmission() {
     }
   });
   await flushAsyncWork();
+  await runQueuedTimers();
 
   return {
     fetchCalls,
@@ -379,6 +417,11 @@ test('salon submission posts form values and reveals the completion state on API
   assert.equal(result.fetchCalls.length, 1, 'submission should make one API request');
   assert.equal(result.fetchCalls[0].url, '/api/salon-registrations');
   assert.equal(result.fetchCalls[0].options.method, 'POST');
+  const headers = result.fetchCalls[0].options.headers;
+  const contentType = typeof headers?.get === 'function'
+    ? headers.get('content-type')
+    : Object.entries(headers ?? {}).find(([name]) => name.toLowerCase() === 'content-type')?.[1];
+  assert.equal(contentType?.toLowerCase(), 'application/json');
   const payload = JSON.parse(result.fetchCalls[0].options.body);
   for (const [fieldName, expectedValue] of Object.entries({
     name: '林鹰',
