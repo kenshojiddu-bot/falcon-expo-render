@@ -457,6 +457,7 @@ def make_theme_poster(
     brightness=0.72,
     feature_background=False,
     decoration=None,
+    brand_line=None,
 ):
     if feature_background:
         poster = prepare_feature_background(source_path)
@@ -500,8 +501,20 @@ def make_theme_poster(
         )
     line_y = title_top + len(title_lines) * 126 + 8
     draw.rectangle((center_x - 120, line_y, center_x + 120, line_y + 6), fill=accent)
+    description_y = line_y + 46
+    if brand_line:
+        draw.text(
+            (center_x, line_y + 48),
+            brand_line,
+            anchor="ma",
+            font=font(52),
+            fill=title_color,
+            stroke_width=3,
+            stroke_fill=shadow,
+        )
+        description_y = line_y + 112
     draw.text(
-        (center_x, line_y + 46),
+        (center_x, description_y),
         description,
         anchor="ma",
         font=font(37),
@@ -570,6 +583,7 @@ def make_theme_posters():
         105,
         "海钓主题",
         feature_background=True,
+        brand_line="蓝海心途",
     )
     make_theme_poster(
         FALCON_SOURCE,
