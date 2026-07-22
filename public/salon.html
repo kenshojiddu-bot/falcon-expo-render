@@ -199,9 +199,38 @@
     const form = document.getElementById('salonForm');
     const status = document.getElementById('status');
     const successPanel = document.getElementById('successPanel');
+    const storageKey = 'salon-registrations';
     function setStatus(message, type) {
       status.textContent = message;
       status.className = `status ${type || ''}`.trim();
+    }
+    function saveLocalBackup(payload) {
+      const backup = {
+        ...payload,
+        localId: `salon-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+        submittedAt: new Date().toISOString()
+      };
+      try {
+        const stored = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        const registrations = Array.isArray(stored) ? stored : [];
+        registrations.push(backup);
+        localStorage.setItem(storageKey, JSON.stringify(registrations));
+      } catch (error) {
+        // Storage can be unavailable in private or restricted browser contexts.
+      }
+      return backup.localId;
+    }
+    function removeLocalBackup(localId) {
+      try {
+        const stored = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        if (!Array.isArray(stored)) return;
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify(stored.filter((registration) => registration.localId !== localId))
+        );
+      } catch (error) {
+        // A completed network request must not be affected by storage failures.
+      }
     }
     form.addEventListener('submit', (event) => {
       event.preventDefault();
@@ -213,7 +242,18 @@
         setStatus(`请先填写：${label ? label.textContent.replace(' *', '') : '必填项'}`, 'error');
         return;
       }
+      const email = form.elements.namedItem('email');
+      if (email && email.value !== '' && !email.validity.valid) {
+        email.focus();
+        setStatus('请填写有效邮箱', 'error');
+        return;
+      }
       const payload = Object.fromEntries(new FormData(form).entries());
+      const localId = saveLocalBackup(payload);
+      if (location.protocol === 'file:') {
+        setStatus('当前为本地预览，报名信息仅保存在当前浏览器，不会发送给活动方。请使用线上报名页面提交。', 'error');
+        return;
+      }
       setStatus('正在提交报名...', '');
       fetch('/api/salon-registrations', {
         method: 'POST',
@@ -221,13 +261,13 @@
         body: JSON.stringify(payload)
       }).then((response) => {
         if (!response.ok) throw new Error(`提交失败：${response.status}`);
-        return response.json();
       }).then(() => {
+        removeLocalBackup(localId);
         form.reset();
         form.hidden = true;
         successPanel.hidden = false;
-        document.querySelector('#completeButton').focus();
-      }).catch(() => setStatus('暂时无法提交，请稍后重试。', 'error'));
+        successPanel.querySelector('a').focus();
+      }).catch(() => setStatus('暂时无法提交，报名信息已保留，请稍后重试。', 'error'));
     });
   </script>
 </body>

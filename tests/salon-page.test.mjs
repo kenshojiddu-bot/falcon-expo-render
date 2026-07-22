@@ -113,7 +113,7 @@ async function flushAsyncWork() {
   }
 }
 
-async function runSalonSubmission() {
+async function runSalonSubmission(options = {}) {
   const values = {
     name: '林鹰',
     phone: '13800138000',
@@ -123,16 +123,26 @@ async function runSalonSubmission() {
     email: '',
     city: '',
     interest: '',
-    note: ''
+    note: '',
+    ...options.values
   };
   const controls = Object.fromEntries(
-    Object.entries(values).map(([name, value]) => [name, { id: name, name, value }])
+    Object.entries(values).map(([name, value]) => [name, {
+      id: name,
+      name,
+      value,
+      validity: { valid: name !== 'email' || options.emailValid !== false },
+      focus() {
+        focusedField = name;
+      }
+    }])
   );
   const requiredControls = ['name', 'phone', 'company', 'role', 'topic'].map(
     (name) => controls[name]
   );
   const formHandlers = {};
   let prevented = false;
+  let focusedField = null;
   let focusCalled = false;
   let locationChanged = false;
   const visibleWrites = [];
@@ -173,8 +183,17 @@ async function runSalonSubmission() {
     querySelectorAll(selector) {
       return selector === '[required]' ? requiredControls : [];
     },
-    querySelector() {
-      label.textContent = '字段';
+    querySelector(selector) {
+      const fieldId = selector.match(/^label\[for="([^"]+)"\]$/)?.[1];
+      const labelText = {
+        name: '姓名 *',
+        phone: '手机 / 微信 *',
+        company: '公司 / 机构 *',
+        role: '身份 / 职位 *',
+        topic: '最关注的主题 *'
+      }[fieldId];
+      if (!labelText) return null;
+      label.textContent = labelText;
       return label;
     },
     reset() {
@@ -190,7 +209,7 @@ async function runSalonSubmission() {
       : null;
   };
   const locationObject = {
-    protocol: 'https:',
+    protocol: options.protocol ?? 'https:',
     get href() {
       return originalLocationHref;
     },
@@ -228,24 +247,31 @@ async function runSalonSubmission() {
       return { salonForm: form, ...documentElements }[id] ?? null;
     }
   };
-  const storage = new Map();
+  const storage = new Map(
+    Object.entries(options.initialStorage ?? {}).map(([key, value]) => [key, value])
+  );
+  const storageWrites = [];
   const localStorage = {
     getItem(key) {
+      if (options.storageReadError) throw new Error('storage read failed');
       return storage.get(key) ?? null;
     },
     setItem(key, value) {
+      if (options.storageWriteError) throw new Error('storage write failed');
       storage.set(key, value);
+      storageWrites.push({ key, value });
     },
     removeItem(key) {
       storage.delete(key);
     }
   };
   const fetchCalls = [];
-  const fetch = async (url, options) => {
-    fetchCalls.push({ url, options });
+  const fetch = async (url, requestOptions) => {
+    fetchCalls.push({ url, options: requestOptions });
+    if (options.fetchError) throw new Error('network failed');
     return {
-      ok: true,
-      status: 201,
+      ok: options.responseOk ?? true,
+      status: options.responseStatus ?? 201,
       async json() {
         return { registrationId: 'server-only-id' };
       }
@@ -347,12 +373,16 @@ async function runSalonSubmission() {
     form,
     successPanel,
     status,
+    controls,
+    focusedField,
     focusCalled,
     locationChanged,
     locationHref: locationValue === locationObject ? locationObject.href : locationValue,
     initialLocationHref: originalLocationHref,
     prevented,
-    visibleWrites
+    visibleWrites,
+    storage,
+    storageWrites
   };
 }
 
@@ -426,8 +456,55 @@ test('salon form owns every required registration control', () => {
   }
 });
 
+test('salon submission focuses the first missing required field and explains what is missing', async () => {
+  const result = await runSalonSubmission({ values: { name: '   ', phone: '' } });
+
+  assert.equal(result.fetchCalls.length, 0);
+  assert.equal(result.focusedField, 'name');
+  assert.match(result.status.textContent, /请先填写：姓名/);
+});
+
+test('salon submission rejects and focuses a non-empty invalid email', async () => {
+  const result = await runSalonSubmission({
+    values: { email: 'not-an-email' },
+    emailValid: false
+  });
+
+  assert.equal(result.fetchCalls.length, 0);
+  assert.equal(result.focusedField, 'email');
+  assert.equal(result.status.textContent, '请填写有效邮箱');
+});
+
+test('local file submission keeps a browser backup and clearly stays in preview mode', async () => {
+  const result = await runSalonSubmission({ protocol: 'file:' });
+  const registrations = JSON.parse(result.storage.get('salon-registrations'));
+
+  assert.equal(result.fetchCalls.length, 0);
+  assert.equal(result.form.hidden, false);
+  assert.equal(result.successPanel.hidden, true);
+  assert.equal(result.controls.name.value, '林鹰');
+  assert.equal(
+    result.status.textContent,
+    '当前为本地预览，报名信息仅保存在当前浏览器，不会发送给活动方。请使用线上报名页面提交。'
+  );
+  assert.equal(registrations.length, 1);
+  assert.equal(registrations[0].name, '林鹰');
+  assert.equal(typeof registrations[0].localId, 'string');
+  assert.ok(registrations[0].localId.length > 0);
+  assert.equal(Number.isNaN(Date.parse(registrations[0].submittedAt)), false);
+});
+
 test('salon submission posts form values and reveals the completion state on API success', async () => {
-  const result = await runSalonSubmission();
+  const previousRegistration = {
+    localId: 'keep-this-entry',
+    submittedAt: '2026-07-21T00:00:00.000Z',
+    name: '旧报名'
+  };
+  const result = await runSalonSubmission({
+    initialStorage: {
+      'salon-registrations': JSON.stringify([previousRegistration])
+    }
+  });
 
   assert.equal(result.prevented, true);
   assert.equal(result.fetchCalls.length, 1, 'submission should make one API request');
@@ -448,6 +525,21 @@ test('salon submission posts form values and reveals the completion state on API
   })) {
     assert.equal(payload[fieldName], expectedValue, `JSON payload should contain ${fieldName}`);
   }
+  assert.equal('localId' in payload, false, 'API payload should only contain form values');
+  assert.equal('submittedAt' in payload, false, 'API payload should only contain form values');
+  const backupWrite = result.storageWrites
+    .map(({ value }) => JSON.parse(value))
+    .find((registrations) => registrations.length === 2);
+  assert.ok(backupWrite, 'submission should be backed up before the API request completes');
+  const currentBackup = backupWrite.find(({ localId }) => localId !== previousRegistration.localId);
+  assert.equal(currentBackup.name, '林鹰');
+  assert.equal(typeof currentBackup.localId, 'string');
+  assert.equal(Number.isNaN(Date.parse(currentBackup.submittedAt)), false);
+  assert.deepEqual(
+    JSON.parse(result.storage.get('salon-registrations')),
+    [previousRegistration],
+    'API success should remove only the current local backup'
+  );
   assert.equal(result.form.hidden, true);
   assert.equal(result.successPanel.hidden, false);
   assert.equal(result.focusCalled, true);
@@ -457,6 +549,26 @@ test('salon submission posts form values and reveals the completion state on API
   );
   assert.equal(result.locationChanged, false);
   assert.equal(result.locationHref, result.initialLocationHref);
+});
+
+test('failed salon submission preserves values and backup for retry', async () => {
+  const result = await runSalonSubmission({ responseOk: false, responseStatus: 503 });
+  const registrations = JSON.parse(result.storage.get('salon-registrations'));
+
+  assert.equal(result.fetchCalls.length, 1);
+  assert.equal(result.form.hidden, false);
+  assert.equal(result.successPanel.hidden, true);
+  assert.equal(result.controls.name.value, '林鹰');
+  assert.equal(registrations.length, 1);
+  assert.match(result.status.textContent, /重试/);
+});
+
+test('localStorage failures do not block the salon API request', async () => {
+  const result = await runSalonSubmission({ storageReadError: true });
+
+  assert.equal(result.fetchCalls.length, 1);
+  assert.equal(result.form.hidden, true);
+  assert.equal(result.successPanel.hidden, false);
 });
 
 test('salon completion panel uses the homepage link contract', () => {
