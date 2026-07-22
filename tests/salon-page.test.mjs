@@ -433,6 +433,22 @@ test('salon hero identifies the Oriental Falcon event and its logistics', () => 
   );
 });
 
+test('salon overview introduces the Saudi falcon expo theme', () => {
+  const overview = findSectionByHeading(html, '活动概述');
+
+  assertVisibleTextIncludesAll(
+    overview,
+    [
+      '活动以“精品东方·鹰耀出海”为主题',
+      '沙特猎鹰展推介',
+      'AI+文旅出海',
+      '东方精品文化交流',
+      '出海企业家、海外嘉宾、AI科技企业代表及高净值客户'
+    ],
+    'salon overview'
+  );
+});
+
 test('salon afternoon and dinner sections present their complete event flows', () => {
   const afternoon = findSectionByHeading(html, '下午场');
   const dinner = findSectionByHeading(html, '晚宴场');
