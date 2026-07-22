@@ -40,11 +40,28 @@ def wrap_text(draw, text, text_font, max_width):
     return lines
 
 
-def draw_wrapped(draw, position, text, text_font, fill, max_width, line_gap):
+def draw_wrapped(
+    draw,
+    position,
+    text,
+    text_font,
+    fill,
+    max_width,
+    line_gap,
+    stroke_width=0,
+    stroke_fill=None,
+):
     x, y = position
     line_height = draw.textbbox((0, 0), "国A", font=text_font)[3]
     for line in wrap_text(draw, text, text_font, max_width):
-        draw.text((x, y), line, font=text_font, fill=fill)
+        draw.text(
+            (x, y),
+            line,
+            font=text_font,
+            fill=fill,
+            stroke_width=stroke_width,
+            stroke_fill=stroke_fill,
+        )
         y += line_height + line_gap
     return y
 
@@ -82,10 +99,10 @@ def make_poster(qr_image):
     source = Image.open(SOURCE_IMAGE).convert("RGB")
     background = cover_crop(source, (WIDTH, HEIGHT))
     background = ImageEnhance.Color(background).enhance(0.78)
-    background = ImageEnhance.Brightness(background).enhance(0.58)
+    background = ImageEnhance.Brightness(background).enhance(0.52)
 
     poster = background.convert("RGBA")
-    poster.alpha_composite(Image.new("RGBA", poster.size, (12, 11, 10, 74)))
+    poster.alpha_composite(Image.new("RGBA", poster.size, (12, 11, 10, 88)))
     draw = ImageDraw.Draw(poster, "RGBA")
 
     margin = 64
@@ -94,16 +111,16 @@ def make_poster(qr_image):
     draw.text((margin, 258), "鹰耀出海", font=font(96), fill=WHITE)
     draw.rectangle((margin, 398, 260, 404), fill=COPPER)
 
-    intro_top = 456
-    draw.rounded_rectangle(
-        (margin, intro_top, WIDTH - margin, 872),
-        radius=8,
-        fill=(20, 19, 18, 218),
-        outline=(226, 181, 116, 96),
-        width=2,
+    intro_top = 468
+    shadow = (8, 7, 6, 210)
+    draw.text(
+        (margin, intro_top),
+        "活动主题",
+        font=font(30),
+        fill=COPPER,
+        stroke_width=2,
+        stroke_fill=shadow,
     )
-    draw.rectangle((margin, intro_top, margin + 8, 872), fill=COPPER)
-    draw.text((margin + 34, intro_top + 30), "活动主题", font=font(30), fill=COPPER)
     overview = (
         "活动以“精品东方·鹰耀出海”为主题，围绕沙特猎鹰展推介、"
         "AI+文旅出海与东方精品文化交流展开，链接出海企业家、海外嘉宾、"
@@ -111,59 +128,88 @@ def make_poster(qr_image):
     )
     intro_end = draw_wrapped(
         draw,
-        (margin + 34, intro_top + 88),
+        (margin, intro_top + 66),
         overview,
-        font(35),
+        font(34),
         WHITE,
-        WIDTH - 2 * margin - 76,
-        15,
-    )
-    draw.rounded_rectangle(
-        (margin + 34, intro_end + 10, margin + 382, intro_end + 62),
-        radius=8,
-        fill=(183, 58, 47, 230),
+        WIDTH - 2 * margin,
+        14,
+        stroke_width=2,
+        stroke_fill=shadow,
     )
     draw.text(
-        (margin + 54, intro_end + 18),
-        "沙特猎鹰展推介",
-        font=font(27),
-        fill=WHITE,
+        (margin, intro_end + 20),
+        "沙特猎鹰展推介  ·  AI+文旅出海",
+        font=font(29),
+        fill=COPPER,
+        stroke_width=2,
+        stroke_fill=shadow,
     )
 
-    info_top = 918
-    draw.text((margin, info_top), "2026年8月7日", font=font(50), fill=COPPER)
+    info_top = 960
+    draw.text(
+        (margin, info_top),
+        "2026年8月7日",
+        font=font(52),
+        fill=COPPER,
+        stroke_width=2,
+        stroke_fill=shadow,
+    )
     draw.text(
         (margin, info_top + 76),
         "15:00 主题活动   |   18:00 精品晚宴",
         font=font(33),
         fill=WHITE,
+        stroke_width=2,
+        stroke_fill=shadow,
     )
-    draw.text((margin, info_top + 142), "成都高新区豪生酒店", font=font(39), fill=WHITE)
+    draw.text(
+        (margin, info_top + 142),
+        "成都高新区豪生酒店",
+        font=font(39),
+        fill=WHITE,
+        stroke_width=2,
+        stroke_fill=shadow,
+    )
     draw.text(
         (margin, info_top + 202),
         "成都市武侯区天泰路338号",
         font=font(29),
         fill=MUTED_WHITE,
+        stroke_width=2,
+        stroke_fill=shadow,
     )
 
-    panel = (margin, 1246, WIDTH - margin, 1856)
-    draw.rounded_rectangle(panel, radius=8, fill=WHITE)
-    qr_size = 440
-    qr_for_poster = qr_image.resize((qr_size, qr_size), Image.Resampling.NEAREST)
-    poster.alpha_composite(qr_for_poster.convert("RGBA"), (94, 1322))
-
-    right_x = 584
-    draw.text((right_x, 1362), "扫码报名", font=font(58), fill=CHARCOAL)
-    draw.rectangle((right_x, 1448, right_x + 150, 1454), fill=VERMILION)
-    draw.text((right_x, 1494), "席位有限", font=font(34), fill=CHARCOAL)
-    draw.text((right_x, 1546), "提交后联系确认", font=font(28), fill=(78, 71, 64))
     draw.text(
-        (right_x, 1650),
+        (margin, 1716),
+        "席位有限  ·  提交后联系确认",
+        font=font(27),
+        fill=WHITE,
+        stroke_width=2,
+        stroke_fill=shadow,
+    )
+
+    qr_size = 240
+    qr_for_poster = qr_image.resize((qr_size, qr_size), Image.Resampling.NEAREST)
+    qr_x = WIDTH - margin - qr_size
+    qr_y = 1594
+    draw.text(
+        (qr_x, qr_y - 48),
+        "扫码报名",
+        font=font(25),
+        fill=WHITE,
+        stroke_width=2,
+        stroke_fill=shadow,
+    )
+    poster.alpha_composite(qr_for_poster.convert("RGBA"), (qr_x, qr_y))
+    draw.text(
+        (WIDTH - margin - 390, 1840),
         "falcon-expo.onrender.com/salon.html",
         font=font(18),
-        fill=(78, 71, 64),
+        fill=MUTED_WHITE,
+        stroke_width=1,
+        stroke_fill=shadow,
     )
-    draw.text((94, 1788), "扫码进入正式报名页面", font=font(27), fill=(78, 71, 64))
 
     poster.convert("RGB").save(POSTER_OUTPUT, format="PNG", optimize=True)
 
