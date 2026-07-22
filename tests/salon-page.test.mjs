@@ -159,8 +159,10 @@ async function runSalonSubmission() {
     focusCalled = true;
   };
   successPanel.hidden = true;
-  successPanel.querySelector = function querySelector() {
-    return completeButton;
+  successPanel.querySelector = function querySelector(selector) {
+    return ['.complete-button', 'a[href="/"]', '#completeButton'].includes(selector)
+      ? completeButton
+      : null;
   };
   const locationObject = {
     protocol: 'https:',
@@ -189,10 +191,16 @@ async function runSalonSubmission() {
   const documentElements = {
     status,
     successPanel,
-    completeButton,
-    'complete-button': completeButton
+    completeButton
   };
   const document = {
+    get location() {
+      return locationValue;
+    },
+    set location(value) {
+      locationChanged = true;
+      locationValue = value;
+    },
     querySelector(selector) {
       return typeof selector === 'string' && /complete|href|^\s*a(?:\b|[.#]|\[)/i.test(selector)
         ? completeButton
