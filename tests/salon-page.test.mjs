@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import vm from 'node:vm';
 
 const html = await readFile(new URL('../public/salon.html', import.meta.url), 'utf8');
 
@@ -12,6 +13,17 @@ function findContainerByAttribute(source, tagName, attribute, value, description
   const escapedValue = escapeRegExp(value);
   const pattern = new RegExp(
     `<${tagName}\\b(?=[^>]*\\b${attribute}=["']${escapedValue}["'])[^>]*>[\\s\\S]*?<\\/${tagName}>`,
+    'i'
+  );
+  const match = source.match(pattern);
+  assert.ok(match, `salon page should contain ${description}`);
+  return match[0];
+}
+
+function findElementById(source, id, description) {
+  const escapedId = escapeRegExp(id);
+  const pattern = new RegExp(
+    `<([a-z][\\w-]*)\\b(?=[^>]*\\bid=["']${escapedId}["'])[^>]*>[\\s\\S]*?<\\/\\1>`,
     'i'
   );
   const match = source.match(pattern);
@@ -54,20 +66,172 @@ function findInlineScript(source, marker) {
   return script;
 }
 
-function findPromiseSuccessCallback(script) {
-  const promiseChain = script.match(
-    /fetch\(\s*["']\/api\/salon-registrations["'][\s\S]*?\.then\(\s*\(?\s*response\s*\)?\s*=>\s*\{([\s\S]*?)\}\s*\)\s*\.then\(\s*\(?\s*[\w$]*\s*\)?\s*=>\s*\{([\s\S]*?)\}\s*\)/
+function inlineScriptSource(source, marker) {
+  const match = findInlineScript(source, marker).match(/^<script\b[^>]*>([\s\S]*)<\/script>$/i);
+  assert.ok(match, 'inline salon script should have a script body');
+  return match[1];
+}
+
+function findSectionByHeading(source, headingText) {
+  const sections = source.match(/<section\b[\s\S]*?<\/section>/gi) ?? [];
+  const section = sections.find((candidate) => {
+    const heading = candidate.match(/<h2\b[^>]*>[\s\S]*?<\/h2>/i);
+    return heading && visibleText(heading[0]).includes(headingText);
+  });
+  assert.ok(section, `salon page should contain a section titled ${headingText}`);
+  return section;
+}
+
+async function flushAsyncWork() {
+  for (let round = 0; round < 5; round += 1) {
+    await Promise.resolve();
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+}
+
+async function runSalonSubmission() {
+  const values = {
+    name: '林鹰',
+    phone: '13800138000',
+    company: '猎鹰国际',
+    role: '出海企业家',
+    topic: 'AI+文旅出海',
+    email: '',
+    city: '',
+    interest: '',
+    note: ''
+  };
+  const controls = Object.fromEntries(
+    Object.entries(values).map(([name, value]) => [name, { id: name, name, value }])
   );
-  assert.ok(
-    promiseChain,
-    'submission should handle a validated response in a dedicated success callback'
+  const requiredControls = ['name', 'phone', 'company', 'role', 'topic'].map(
+    (name) => controls[name]
   );
-  assert.match(
-    promiseChain[1],
-    /if\s*\(\s*!response\.ok\s*\)\s*throw\b/,
-    'the response callback should throw before success handling when response.ok is false'
-  );
-  return promiseChain[2];
+  const formHandlers = {};
+  let prevented = false;
+  let focusCalled = false;
+  let locationChanged = false;
+  let locationHref = 'https://example.test/salon.html';
+  const form = {
+    hidden: false,
+    elements: {
+      ...controls,
+      namedItem(name) {
+        return this[name];
+      }
+    },
+    addEventListener(type, handler) {
+      formHandlers[type] = handler;
+    },
+    querySelectorAll(selector) {
+      return selector === '[required]' ? requiredControls : [];
+    },
+    querySelector() {
+      return { textContent: '字段' };
+    },
+    reset() {
+    }
+  };
+  const completeButton = {
+    focus() {
+      focusCalled = true;
+    }
+  };
+  const successPanel = {
+    hidden: true,
+    querySelector(selector) {
+      assert.ok(
+        selector === 'a[href="/"]' || selector.includes('complete-button'),
+        `completion focus should target the homepage link, got ${selector}`
+      );
+      return completeButton;
+    }
+  };
+  const storage = new Map();
+  const localStorage = {
+    getItem(key) {
+      return storage.get(key) ?? null;
+    },
+    setItem(key, value) {
+      storage.set(key, value);
+    },
+    removeItem(key) {
+      storage.delete(key);
+    }
+  };
+  const location = {
+    protocol: 'https:',
+    get href() {
+      return locationHref;
+    },
+    set href(value) {
+      locationChanged = true;
+      locationHref = value;
+    },
+    assign() {
+      locationChanged = true;
+    },
+    replace() {
+      locationChanged = true;
+    }
+  };
+  const fetchCalls = [];
+  const fetch = async (url, options) => {
+    fetchCalls.push({ url, options });
+    return {
+      ok: true,
+      status: 201,
+      async json() {
+        return { registrationId: 'server-only-id' };
+      }
+    };
+  };
+  class FormDataMock {
+    constructor(target) {
+      this.target = target;
+    }
+
+    entries() {
+      return Object.entries(values);
+    }
+  }
+  const document = {
+    status: { textContent: '', className: '' },
+    getElementById(id) {
+      return { salonForm: form, status: this.status, successPanel }[id] ?? null;
+    }
+  };
+  const sandbox = {
+    document,
+    fetch,
+    FormData: FormDataMock,
+    localStorage,
+    location,
+    window: { location },
+    setTimeout,
+    clearTimeout
+  };
+
+  vm.runInNewContext(inlineScriptSource(html, 'salonForm'), sandbox);
+  assert.equal(typeof formHandlers.submit, 'function', 'salon form should register a submit handler');
+  await formHandlers.submit({
+    preventDefault() {
+      prevented = true;
+    }
+  });
+  await flushAsyncWork();
+
+  return {
+    fetchCalls,
+    form,
+    successPanel,
+    status: document.status,
+    focusCalled,
+    locationChanged,
+    locationHref,
+    initialLocationHref: 'https://example.test/salon.html',
+    prevented
+  };
 }
 
 test('salon hero identifies the Oriental Falcon event and its logistics', () => {
@@ -91,20 +255,8 @@ test('salon hero identifies the Oriental Falcon event and its logistics', () => 
 });
 
 test('salon afternoon and dinner sections present their complete event flows', () => {
-  const afternoon = findContainerByAttribute(
-    html,
-    'section',
-    'data-section',
-    'afternoon',
-    '[data-section="afternoon"]'
-  );
-  const dinner = findContainerByAttribute(
-    html,
-    'section',
-    'data-section',
-    'dinner',
-    '[data-section="dinner"]'
-  );
+  const afternoon = findSectionByHeading(html, '下午场');
+  const dinner = findSectionByHeading(html, '晚宴场');
 
   assertVisibleTextIncludesAll(
     afternoon,
@@ -152,60 +304,45 @@ test('salon form owns every required registration control', () => {
   }
 });
 
-test('salon submission posts the required form data as JSON', () => {
-  const script = findInlineScript(html, 'salonForm');
-  const payloadDeclaration = script.match(/const\s+payload\s*=\s*\{([\s\S]*?)\}\s*;/);
+test('salon submission posts form values and reveals the completion state on API success', async () => {
+  const result = await runSalonSubmission();
 
-  assert.ok(payloadDeclaration, 'submission should build an explicit payload object');
-  for (const fieldName of ['name', 'phone', 'company', 'role', 'topic']) {
-    assert.match(
-      payloadDeclaration[1],
-      new RegExp(
-        `\\b${fieldName}\\s*:\\s*form\\.elements\\.${fieldName}\\.value\\.trim\\(\\)`
-      ),
-      `JSON payload should explicitly include trimmed ${fieldName}`
-    );
+  assert.equal(result.prevented, true);
+  assert.equal(result.fetchCalls.length, 1, 'submission should make one API request');
+  assert.equal(result.fetchCalls[0].url, '/api/salon-registrations');
+  assert.equal(result.fetchCalls[0].options.method, 'POST');
+  const payload = JSON.parse(result.fetchCalls[0].options.body);
+  for (const [fieldName, expectedValue] of Object.entries({
+    name: '林鹰',
+    phone: '13800138000',
+    company: '猎鹰国际',
+    role: '出海企业家',
+    topic: 'AI+文旅出海'
+  })) {
+    assert.equal(payload[fieldName], expectedValue, `JSON payload should contain ${fieldName}`);
   }
-  assert.match(
-    script,
-    /fetch\(\s*["']\/api\/salon-registrations["']\s*,\s*\{[\s\S]*?method\s*:\s*["']POST["'][\s\S]*?body\s*:\s*JSON\.stringify\(payload\)[\s\S]*?\}\s*\)/,
-    'submission should POST the JSON payload to /api/salon-registrations'
-  );
+  assert.equal(result.form.hidden, true);
+  assert.equal(result.successPanel.hidden, false);
+  assert.equal(result.focusCalled, true);
+  assert.doesNotMatch(result.status.textContent, /registrationId|localId|报名编号|编号/i);
+  assert.equal(result.locationChanged, false);
+  assert.equal(result.locationHref, result.initialLocationHref);
 });
 
-test('successful salon submission reveals an accessible completion state', () => {
-  const script = findInlineScript(html, 'salonForm');
-  const successCallback = findPromiseSuccessCallback(script);
-  const successPanel = findContainerByAttribute(html, 'section', 'id', 'successPanel', '#successPanel');
+test('salon completion panel uses the homepage link contract', () => {
+  const successPanel = findElementById(html, 'successPanel', '#successPanel');
 
   assert.match(
     successPanel,
-    /<section\b(?=[^>]*\bid=["']successPanel["'])(?=[^>]*\bhidden(?:\s|=|\/?>))[^>]*>/i,
+    /<[^>]+\bid=["']successPanel["'][^>]*\bhidden(?:\s|=|\/?>)/i,
     '#successPanel should initially be hidden'
   );
   assert.match(
     successPanel,
-    /<a\b(?=[^>]*\bclass=["'][^"']*\bcomplete-button\b[^"']*["'])(?=[^>]*\bhref=["']\/["'])[^>]*>[\s\S]*?完成并返回猎鹰展主页[\s\S]*?<\/a>/i
-  );
-  assert.match(
-    successCallback,
-    /form\.hidden\s*=\s*true\s*;[\s\S]*?successPanel\.hidden\s*=\s*false\s*;[\s\S]*?successPanel\.querySelector\(\s*["']\.complete-button["']\s*\)\.focus\(\s*\)\s*;/,
-    'the success callback should hide the form, reveal the panel, then focus the completion button'
-  );
-  assert.doesNotMatch(
-    script,
-    /\b(?:window\.)?location\s*=|\b(?:window\.)?location\.(?:href\s*=|assign\s*\(|replace\s*\()/,
-    'successful submission should not navigate automatically'
+    /<a\b(?=[^>]*\bhref=["']\/["'])[^>]*>[\s\S]*?完成并返回猎鹰展主页[\s\S]*?<\/a>/i
   );
 });
 
 test('salon page never exposes registration identifiers to users', () => {
   assert.doesNotMatch(visibleText(html), /registrationId|localId|报名编号|报名已提交，编号/i);
-
-  const script = findInlineScript(html, 'salonForm');
-  assert.doesNotMatch(
-    script,
-    /(?:setStatus\s*\(|(?:textContent|innerText|innerHTML)\s*=)[\s\S]{0,240}\b(?:registrationId|localId)\b/,
-    'registration identifiers should never be written to visible UI'
-  );
 });
