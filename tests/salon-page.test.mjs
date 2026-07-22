@@ -82,6 +82,30 @@ function findSectionByHeading(source, headingText) {
   return section;
 }
 
+function findCompletionLink(source) {
+  const successPanel = source.match(
+    /<([a-z][\w-]*)\b(?=[^>]*\bid=["']successPanel["'])[^>]*>[\s\S]*?<\/\1>/i
+  )?.[0];
+  const link = successPanel?.match(/<a\b[^>]*>[\s\S]*?<\/a>/i)?.[0];
+  if (!link) return null;
+  const openingTag = link.match(/^<a\b([^>]*)>/i)?.[1] ?? '';
+  const attributes = Object.fromEntries(
+    [...openingTag.matchAll(/\b([\w-]+)\s*=\s*["']([^"']*)["']/g)].map((match) => [match[1], match[2]])
+  );
+  return { attributes };
+}
+
+function matchesCompletionLink(selector, link) {
+  if (!link || typeof selector !== 'string') return false;
+  const trimmed = selector.trim();
+  const { id, class: className, href } = link.attributes;
+  if (trimmed === 'a') return true;
+  if (trimmed === `a[href="${href}"]`) return Boolean(href);
+  if (trimmed.startsWith('.') && className) return className.split(/\s+/).includes(trimmed.slice(1));
+  if (trimmed.startsWith('#')) return trimmed.slice(1) === id;
+  return false;
+}
+
 async function flushAsyncWork() {
   for (let round = 0; round < 5; round += 1) {
     await Promise.resolve();
@@ -134,6 +158,7 @@ async function runSalonSubmission() {
   const label = trackedVisibleElement();
   const originalLocationHref = 'https://example.test/salon.html';
   let locationValue;
+  const completionLink = findCompletionLink(html);
   const form = Object.assign(trackedVisibleElement(), {
     hidden: false,
     elements: {
@@ -160,7 +185,7 @@ async function runSalonSubmission() {
   };
   successPanel.hidden = true;
   successPanel.querySelector = function querySelector(selector) {
-    return ['.complete-button', 'a[href="/"]', '#completeButton'].includes(selector)
+    return matchesCompletionLink(selector, completionLink)
       ? completeButton
       : null;
   };
@@ -190,9 +215,9 @@ async function runSalonSubmission() {
   });
   const documentElements = {
     status,
-    successPanel,
-    completeButton
+    successPanel
   };
+  if (completionLink?.attributes.id) documentElements[completionLink.attributes.id] = completeButton;
   const document = {
     get location() {
       return locationValue;
@@ -202,7 +227,7 @@ async function runSalonSubmission() {
       locationValue = value;
     },
     querySelector(selector) {
-      return typeof selector === 'string' && /complete|href|^\s*a(?:\b|[.#]|\[)/i.test(selector)
+      return matchesCompletionLink(selector, completionLink)
         ? completeButton
         : null;
     },
