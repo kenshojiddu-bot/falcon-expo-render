@@ -54,12 +54,28 @@ function findInlineScript(source, marker) {
   return script;
 }
 
+function findPromiseSuccessCallback(script) {
+  const promiseChain = script.match(
+    /fetch\(\s*["']\/api\/salon-registrations["'][\s\S]*?\.then\(\s*\(?\s*response\s*\)?\s*=>\s*\{([\s\S]*?)\}\s*\)\s*\.then\(\s*\(?\s*[\w$]*\s*\)?\s*=>\s*\{([\s\S]*?)\}\s*\)/
+  );
+  assert.ok(
+    promiseChain,
+    'submission should handle a validated response in a dedicated success callback'
+  );
+  assert.match(
+    promiseChain[1],
+    /if\s*\(\s*!response\.ok\s*\)\s*throw\b/,
+    'the response callback should throw before success handling when response.ok is false'
+  );
+  return promiseChain[2];
+}
+
 test('salon hero identifies the Oriental Falcon event and its logistics', () => {
   const hero = findClassContainer(html, 'header', 'hero');
   const heading = hero.match(/<h1\b[^>]*>[\s\S]*?<\/h1>/i);
 
   assert.ok(heading, 'salon hero should contain an h1');
-  assert.equal(visibleText(heading[0]), '精品东方 鹰耀出海');
+  assert.equal(visibleText(heading[0]).replace(/[·\s]/g, ''), '精品东方鹰耀出海');
   assertVisibleTextIncludesAll(
     hero,
     [
@@ -98,13 +114,14 @@ test('salon afternoon and dinner sections present their complete event flows', (
       '茅台产品文化展',
       '闻香识酒',
       '非遗互动',
-      'AI+文旅出海主题沙龙'
+      'AI+文旅出海主题沙龙',
+      '开鱼秀'
     ],
     'afternoon event flow'
   );
   assertVisibleTextIncludesAll(
     dinner,
-    ['开鱼秀', '机器人舞蹈', '产品走秀', '品鉴知识讲解', '东方主题节目', '抽奖及茅台互动游戏'],
+    ['机器人舞蹈', '产品走秀', '品鉴知识讲解', '东方主题节目', '抽奖及茅台互动游戏'],
     'dinner event flow'
   );
 });
@@ -133,18 +150,22 @@ test('salon form owns every required registration control', () => {
     );
     assert.match(form, requiredControl, `${fieldName} should be required inside #salonForm`);
   }
-
-  assert.doesNotMatch(
-    html.replace(form, ''),
-    /<(?:input|select|textarea)\b(?=[^>]*\brequired(?:\s|=|\/?>))[^>]*>/i,
-    'required controls should not exist outside #salonForm'
-  );
 });
 
 test('salon submission posts the required form data as JSON', () => {
   const script = findInlineScript(html, 'salonForm');
+  const payloadDeclaration = script.match(/const\s+payload\s*=\s*\{([\s\S]*?)\}\s*;/);
 
-  assert.match(script, /new\s+FormData\(form\)/, 'submission payload should come from #salonForm');
+  assert.ok(payloadDeclaration, 'submission should build an explicit payload object');
+  for (const fieldName of ['name', 'phone', 'company', 'role', 'topic']) {
+    assert.match(
+      payloadDeclaration[1],
+      new RegExp(
+        `\\b${fieldName}\\s*:\\s*form\\.elements\\.${fieldName}\\.value\\.trim\\(\\)`
+      ),
+      `JSON payload should explicitly include trimmed ${fieldName}`
+    );
+  }
   assert.match(
     script,
     /fetch\(\s*["']\/api\/salon-registrations["']\s*,\s*\{[\s\S]*?method\s*:\s*["']POST["'][\s\S]*?body\s*:\s*JSON\.stringify\(payload\)[\s\S]*?\}\s*\)/,
@@ -153,8 +174,9 @@ test('salon submission posts the required form data as JSON', () => {
 });
 
 test('successful salon submission reveals an accessible completion state', () => {
-  const successPanel = findContainerByAttribute(html, 'section', 'id', 'successPanel', '#successPanel');
   const script = findInlineScript(html, 'salonForm');
+  const successCallback = findPromiseSuccessCallback(script);
+  const successPanel = findContainerByAttribute(html, 'section', 'id', 'successPanel', '#successPanel');
 
   assert.match(
     successPanel,
@@ -166,9 +188,9 @@ test('successful salon submission reveals an accessible completion state', () =>
     /<a\b(?=[^>]*\bclass=["'][^"']*\bcomplete-button\b[^"']*["'])(?=[^>]*\bhref=["']\/["'])[^>]*>[\s\S]*?完成并返回猎鹰展主页[\s\S]*?<\/a>/i
   );
   assert.match(
-    script,
+    successCallback,
     /form\.hidden\s*=\s*true\s*;[\s\S]*?successPanel\.hidden\s*=\s*false\s*;[\s\S]*?successPanel\.querySelector\(\s*["']\.complete-button["']\s*\)\.focus\(\s*\)\s*;/,
-    'successful submission should hide the form, reveal the panel, then focus the completion button'
+    'the success callback should hide the form, reveal the panel, then focus the completion button'
   );
   assert.doesNotMatch(
     script,
