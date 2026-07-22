@@ -52,6 +52,14 @@ test('database failures return 503 without terminating the salon service', { tim
     const health = await fetch(`http://127.0.0.1:${port}/api/salon-health`);
     assert.equal(health.status, 200);
     assert.equal((await health.json()).ok, true);
+
+    const malformed = await fetch(`http://127.0.0.1:${port}/api/salon-registrations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"name":'
+    });
+    assert.equal(malformed.status, 400);
+    assert.deepEqual(await malformed.json(), { ok: false, error: 'invalid_request' });
     assert.equal(child.exitCode, null);
   } finally {
     child.kill('SIGTERM');

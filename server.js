@@ -231,11 +231,16 @@ app.post('/api/salon-registrations', asyncRoute(async (request, response) => {
 }));
 
 app.use('/api', (error, request, response, next) => {
-  console.error(`API persistence failed for ${request.path}: ${error.message}`);
   if (response.headersSent) {
     next(error);
     return;
   }
+  const status = Number(error.status || error.statusCode);
+  if (status >= 400 && status < 500) {
+    response.status(status).json({ ok: false, error: 'invalid_request' });
+    return;
+  }
+  console.error(`API persistence failed for ${request.path}: ${error.message}`);
   response.status(503).json({ ok: false, error: 'submission_unavailable' });
 });
 
