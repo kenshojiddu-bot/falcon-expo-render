@@ -150,6 +150,118 @@ def add_readability_shade(poster, top_alpha=175, bottom_alpha=190):
     poster.alpha_composite(overlay)
 
 
+def draw_baijiu_tasting_scene(poster):
+    draw = ImageDraw.Draw(poster, "RGBA")
+    draw.ellipse((270, 1478, 810, 1592), fill=(14, 7, 8, 225), outline=(*GOLD, 105), width=2)
+    draw.ellipse((296, 1490, 784, 1572), fill=(45, 18, 20, 175))
+
+    cups = (
+        (405, 1415, 0.90),
+        (675, 1415, 0.90),
+        (540, 1460, 1.05),
+    )
+    shadow_layer = Image.new("RGBA", poster.size, (0, 0, 0, 0))
+    shadow_draw = ImageDraw.Draw(shadow_layer, "RGBA")
+    for center_x, top, scale in cups:
+        width = round(132 * scale)
+        height = round(78 * scale)
+        shadow_draw.ellipse(
+            (
+                center_x - width // 2 - 10,
+                top + height - 8,
+                center_x + width // 2 + 18,
+                top + height + 30,
+            ),
+            fill=(0, 0, 0, 155),
+        )
+    poster.alpha_composite(shadow_layer.filter(ImageFilter.GaussianBlur(16)))
+
+    draw = ImageDraw.Draw(poster, "RGBA")
+    for center_x, top, scale in cups:
+        width = round(132 * scale)
+        height = round(78 * scale)
+        rim_height = round(27 * scale)
+        half_top = width // 2
+        half_bottom = round(width * 0.35)
+        bottom = top + height
+
+        draw.polygon(
+            (
+                (center_x - half_top + 5, top + rim_height // 2),
+                (center_x + half_top - 5, top + rim_height // 2),
+                (center_x + half_bottom, bottom - rim_height // 3),
+                (center_x - half_bottom, bottom - rim_height // 3),
+            ),
+            fill=(247, 245, 240, 250),
+        )
+        draw.polygon(
+            (
+                (center_x + round(width * 0.18), top + rim_height // 2),
+                (center_x + half_top - 5, top + rim_height // 2),
+                (center_x + half_bottom, bottom - rim_height // 3),
+                (center_x + round(width * 0.12), bottom - rim_height // 3),
+            ),
+            fill=(190, 187, 181, 125),
+        )
+        draw.ellipse(
+            (
+                center_x - half_bottom,
+                bottom - rim_height,
+                center_x + half_bottom,
+                bottom,
+            ),
+            fill=(216, 212, 205, 245),
+        )
+        draw.ellipse(
+            (center_x - half_top, top, center_x + half_top, top + rim_height),
+            fill=(255, 253, 247, 255),
+            outline=(244, 226, 194, 145),
+            width=max(1, round(2 * scale)),
+        )
+        inner_width = round(width * 0.72)
+        draw.ellipse(
+            (
+                center_x - inner_width // 2,
+                top + round(8 * scale),
+                center_x + inner_width // 2,
+                top + rim_height - round(6 * scale),
+            ),
+            fill=(211, 209, 204, 245),
+        )
+        liquid_width = round(width * 0.62)
+        draw.ellipse(
+            (
+                center_x - liquid_width // 2,
+                top + round(11 * scale),
+                center_x + liquid_width // 2,
+                top + rim_height - round(8 * scale),
+            ),
+            fill=(246, 246, 242, 220),
+        )
+        draw.arc(
+            (
+                center_x - liquid_width // 2,
+                top + round(10 * scale),
+                center_x + liquid_width // 2,
+                top + rim_height - round(8 * scale),
+            ),
+            195,
+            335,
+            fill=(255, 255, 255, 205),
+            width=max(1, round(2 * scale)),
+        )
+        draw.line(
+            (
+                center_x - round(width * 0.28),
+                top + round(height * 0.42),
+                center_x - round(width * 0.20),
+                top + round(height * 0.76),
+            ),
+            fill=(255, 255, 255, 145),
+            width=max(3, round(5 * scale)),
+        )
+
+
 def make_qr():
     qr = qrcode.QRCode(
         version=None,
@@ -344,6 +456,7 @@ def make_theme_poster(
     saturation=0.9,
     brightness=0.72,
     feature_background=False,
+    decoration=None,
 ):
     if feature_background:
         poster = prepare_feature_background(source_path)
@@ -358,6 +471,8 @@ def make_theme_poster(
         )
     add_color_wash(poster, wash_color, wash_alpha)
     add_readability_shade(poster)
+    if decoration:
+        decoration(poster)
     draw = ImageDraw.Draw(poster, "RGBA")
     margin = 70
     shadow = (4, 5, 6, 210)
@@ -442,6 +557,7 @@ def make_theme_posters():
         focus_x=0.72,
         focus_y=0.5,
         brightness=0.68,
+        decoration=draw_baijiu_tasting_scene,
     )
     make_theme_poster(
         SEA_FISHING_SOURCE,
