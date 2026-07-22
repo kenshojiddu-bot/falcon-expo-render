@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import qrcode
-from PIL import Image, ImageDraw, ImageEnhance, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 from qrcode.constants import ERROR_CORRECT_Q
 
 
@@ -12,9 +12,10 @@ REGISTRATION_URL = "https://falcon-expo.onrender.com/salon.html"
 FONT_PATH = "/System/Library/Fonts/PingFang.ttc"
 
 FALCON_SOURCE = ASSETS / "hero-falcon.jpg"
+REGISTRATION_SOURCE = ASSETS / "salon-expo.jpg"
 # Unsplash source: https://unsplash.com/photos/1470337458703-46ad1756a187
 MOUTAI_SOURCE = ASSETS / "poster-moutai-background.png"
-# Unsplash source: https://unsplash.com/photos/1605499907240-d4240d766581
+# Wikimedia Commons: https://commons.wikimedia.org/wiki/File:Fishing_Boat_Waves_Devaneri_Mahabalipuram_Sep22_A7C_02637.jpg
 SEA_FISHING_SOURCE = ASSETS / "poster-sea-fishing-background.png"
 
 QR_OUTPUT = ASSETS / "salon-registration-qr.png"
@@ -25,7 +26,9 @@ GLOBAL_OUTPUT = ASSETS / "salon-global-theme-poster.png"
 
 COPPER = (226, 181, 116)
 GOLD = (244, 205, 128)
-VERMILION = (190, 58, 45)
+CRIMSON = (145, 24, 38)
+DEEP_BLUE = (7, 53, 88)
+SAUDI_GREEN = (0, 92, 62)
 SEA_BLUE = (145, 207, 220)
 WHITE = (255, 253, 250)
 MUTED_WHITE = (228, 222, 214)
@@ -112,6 +115,29 @@ def prepare_background(
     return background.convert("RGBA")
 
 
+def prepare_feature_background(source_path, feature_top=570):
+    source = Image.open(source_path).convert("RGB")
+    base = cover_crop(source, (WIDTH, HEIGHT), focus_x=0.5, focus_y=0.52)
+    base = base.filter(ImageFilter.GaussianBlur(24))
+    base = ImageEnhance.Brightness(base).enhance(0.56).convert("RGBA")
+
+    feature_height = round(WIDTH * source.height / source.width)
+    feature = source.resize((WIDTH, feature_height), Image.Resampling.LANCZOS)
+    mask = Image.new("L", (WIDTH, feature_height), 255)
+    mask_pixels = mask.load()
+    fade = 100
+    for y in range(feature_height):
+        alpha = min(255, round(255 * y / fade), round(255 * (feature_height - 1 - y) / fade))
+        for x in range(WIDTH):
+            mask_pixels[x, y] = alpha
+    base.paste(feature, (0, feature_top), mask)
+    return base
+
+
+def add_color_wash(poster, color, alpha):
+    poster.alpha_composite(Image.new("RGBA", poster.size, (*color, alpha)))
+
+
 def add_readability_shade(poster, top_alpha=175, bottom_alpha=190):
     overlay = Image.new("RGBA", poster.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay, "RGBA")
@@ -162,12 +188,12 @@ def draw_flow_node(draw, x, y, number, label, width):
 
 def make_registration_poster(qr_image):
     poster = prepare_background(
-        FALCON_SOURCE,
-        focus_x=0.64,
-        focus_y=0.75,
-        zoom=1.25,
-        saturation=0.78,
-        brightness=0.52,
+        REGISTRATION_SOURCE,
+        focus_x=0.86,
+        focus_y=0.5,
+        zoom=1.0,
+        saturation=0.82,
+        brightness=0.48,
     )
     poster.alpha_composite(Image.new("RGBA", poster.size, (12, 11, 10, 88)))
     draw = ImageDraw.Draw(poster, "RGBA")
@@ -308,49 +334,61 @@ def make_theme_poster(
     title_lines,
     description,
     accent,
+    title_color,
+    wash_color,
+    wash_alpha,
     category,
     focus_x=0.5,
     focus_y=0.5,
     zoom=1.0,
     saturation=0.9,
     brightness=0.72,
+    feature_background=False,
 ):
-    poster = prepare_background(
-        source_path,
-        focus_x=focus_x,
-        focus_y=focus_y,
-        zoom=zoom,
-        saturation=saturation,
-        brightness=brightness,
-    )
+    if feature_background:
+        poster = prepare_feature_background(source_path)
+    else:
+        poster = prepare_background(
+            source_path,
+            focus_x=focus_x,
+            focus_y=focus_y,
+            zoom=zoom,
+            saturation=saturation,
+            brightness=brightness,
+        )
+    add_color_wash(poster, wash_color, wash_alpha)
     add_readability_shade(poster)
     draw = ImageDraw.Draw(poster, "RGBA")
     margin = 70
     shadow = (4, 5, 6, 210)
+    center_x = WIDTH // 2
 
     draw.text(
-        (margin, 82),
+        (center_x, 82),
         f"精品东方 · 鹰耀出海  /  {category}",
+        anchor="ma",
         font=font(28),
         fill=accent,
         stroke_width=2,
         stroke_fill=shadow,
     )
-    title_top = 186
+    title_top = 196
     for index, line in enumerate(title_lines):
         draw.text(
-            (margin, title_top + index * 126),
+            (center_x, title_top + index * 126),
             line,
+            anchor="ma",
             font=font(96),
-            fill=WHITE,
+            fill=title_color,
             stroke_width=3,
             stroke_fill=shadow,
         )
     line_y = title_top + len(title_lines) * 126 + 8
-    draw.rectangle((margin, line_y, margin + 210, line_y + 6), fill=accent)
+    draw.rectangle((center_x - 120, line_y, center_x + 120, line_y + 6), fill=accent)
     draw.text(
-        (margin, line_y + 46),
+        (center_x, line_y + 46),
         description,
+        anchor="ma",
         font=font(37),
         fill=accent,
         stroke_width=2,
@@ -360,25 +398,27 @@ def make_theme_poster(
     footer_y = 1718
     draw.rectangle((margin, footer_y - 44, WIDTH - margin, footer_y - 41), fill=(*accent, 165))
     draw.text(
-        (margin, footer_y),
+        (center_x, footer_y),
         "2026.8.7  ·  成都",
+        anchor="ma",
         font=font(42),
-        fill=WHITE,
+        fill=title_color,
         stroke_width=2,
         stroke_fill=shadow,
     )
     draw.text(
-        (margin, footer_y + 66),
+        (center_x, footer_y + 66),
         "精品东方·鹰耀出海",
+        anchor="ma",
         font=font(29),
         fill=accent,
         stroke_width=2,
         stroke_fill=shadow,
     )
     draw.text(
-        (WIDTH - margin, footer_y + 70),
+        (center_x, footer_y + 116),
         "高端商务沙龙",
-        anchor="ra",
+        anchor="ma",
         font=font(25),
         fill=MUTED_WHITE,
         stroke_width=2,
@@ -395,6 +435,9 @@ def make_theme_posters():
         ("精品东方", "醇香世界"),
         "精品茅台高端品鉴之夜",
         GOLD,
+        GOLD,
+        CRIMSON,
+        78,
         "东方品鉴",
         focus_x=0.72,
         focus_y=0.5,
@@ -406,18 +449,21 @@ def make_theme_posters():
         ("向海而行", "钓见新境"),
         "海钓文化 · 户外生活 · 圈层社交",
         SEA_BLUE,
+        WHITE,
+        DEEP_BLUE,
+        105,
         "海钓主题",
-        focus_x=0.48,
-        focus_y=0.5,
-        saturation=0.84,
-        brightness=0.72,
+        feature_background=True,
     )
     make_theme_poster(
         FALCON_SOURCE,
         GLOBAL_OUTPUT,
         ("鹰耀中东", "链接全球"),
         "沙特猎鹰展推介 · AI+文旅出海",
-        COPPER,
+        GOLD,
+        GOLD,
+        SAUDI_GREEN,
+        76,
         "出海主题",
         focus_x=0.64,
         focus_y=0.75,
