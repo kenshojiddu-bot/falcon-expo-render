@@ -55,7 +55,11 @@ function adminConfigured() {
 }
 
 function requestIp(request) {
-  const forwarded = String(request.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  const forwarded = String(request.headers['x-forwarded-for'] || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .at(-1);
   return forwarded || request.ip || request.socket.remoteAddress || 'unknown';
 }
 

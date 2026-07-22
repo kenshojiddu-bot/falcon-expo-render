@@ -54,12 +54,13 @@ async function startServer(overrides = {}) {
   };
 }
 
-async function postJson(url, body, cookie) {
+async function postJson(url, body, cookie, extraHeaders = {}) {
   return fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(cookie ? { Cookie: cookie } : {})
+      ...(cookie ? { Cookie: cookie } : {}),
+      ...extraHeaders
     },
     body: JSON.stringify(body)
   });
@@ -152,6 +153,30 @@ test('admin login throttles repeated wrong passwords', async () => {
     const blocked = await postJson(`${server.baseUrl}/api/admin/login`, { password: testAdminPassword });
     assert.equal(blocked.status, 429);
     assert.deepEqual(await blocked.json(), { ok: false, error: 'too_many_attempts' });
+  } finally {
+    await server.close();
+  }
+});
+
+test('admin login throttling cannot be bypassed by spoofing the first forwarded IP', async () => {
+  const server = await startServer();
+  try {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const response = await postJson(
+        `${server.baseUrl}/api/admin/login`,
+        { password: 'wrong' },
+        '',
+        { 'x-forwarded-for': `198.51.100.${attempt}, 203.0.113.10` }
+      );
+      assert.equal(response.status, 401);
+    }
+    const blocked = await postJson(
+      `${server.baseUrl}/api/admin/login`,
+      { password: testAdminPassword },
+      '',
+      { 'x-forwarded-for': '198.51.100.99, 203.0.113.10' }
+    );
+    assert.equal(blocked.status, 429);
   } finally {
     await server.close();
   }

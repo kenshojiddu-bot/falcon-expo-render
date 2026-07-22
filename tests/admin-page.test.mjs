@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import vm from 'node:vm';
 
 const html = await readFile(new URL('../public/admin.html', import.meta.url), 'utf8');
 
@@ -36,4 +37,21 @@ test('admin client uses protected APIs and never embeds the password', () => {
   assert.match(html, /showModal\(\)/);
   assert.doesNotMatch(html, /id=["']password["'][^>]*\svalue=/i);
   assert.doesNotMatch(html, /ADMIN_PASSWORD/);
+});
+
+test('admin CSV export neutralizes spreadsheet formulas', () => {
+  const csvCellSource = html.match(/function csvCell\(value\) \{[\s\S]*?\n    \}/)?.[0];
+  assert.ok(csvCellSource, 'admin page should define csvCell');
+  const context = { result: null };
+  vm.runInNewContext(
+    `${csvCellSource}; result = ['=SUM(1,1)', '+cmd', '-2+3', '@link', 'normal'].map(csvCell);`,
+    context
+  );
+  assert.deepEqual(Array.from(context.result), [
+    '"\'=SUM(1,1)"',
+    '"\'+cmd"',
+    '"\'-2+3"',
+    '"\'@link"',
+    '"normal"'
+  ]);
 });

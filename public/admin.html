@@ -438,7 +438,9 @@
     });
 
     function csvCell(value) {
-      return `"${String(value ?? '').replaceAll('"', '""')}"`;
+      const text = String(value ?? '');
+      const safeText = /^[=+\-@]/.test(text) ? `'${text}` : text;
+      return `"${safeText.replaceAll('"', '""')}"`;
     }
     exportButton.addEventListener('click', () => {
       if (!filteredSubmissions.length) {
