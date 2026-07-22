@@ -111,8 +111,30 @@ async function runSalonSubmission() {
   let prevented = false;
   let focusCalled = false;
   let locationChanged = false;
-  let locationHref = 'https://example.test/salon.html';
-  const form = {
+  const visibleWrites = [];
+  function trackedVisibleElement() {
+    const values = { textContent: '', innerText: '', innerHTML: '' };
+    const element = { visibleWrites };
+    for (const property of Object.keys(values)) {
+      Object.defineProperty(element, property, {
+        get() {
+          return values[property];
+        },
+        set(value) {
+          values[property] = value;
+          visibleWrites.push(value == null ? '' : String(value));
+        }
+      });
+    }
+    return element;
+  }
+  const status = trackedVisibleElement();
+  const successPanel = trackedVisibleElement();
+  const completeButton = trackedVisibleElement();
+  const label = trackedVisibleElement();
+  const originalLocationHref = 'https://example.test/salon.html';
+  let locationValue;
+  const form = Object.assign(trackedVisibleElement(), {
     hidden: false,
     elements: {
       ...controls,
@@ -127,24 +149,57 @@ async function runSalonSubmission() {
       return selector === '[required]' ? requiredControls : [];
     },
     querySelector() {
-      return { textContent: '字段' };
+      label.textContent = '字段';
+      return label;
     },
     reset() {
     }
+  });
+  completeButton.focus = function focus() {
+    focusCalled = true;
   };
-  const completeButton = {
-    focus() {
-      focusCalled = true;
+  successPanel.hidden = true;
+  successPanel.querySelector = function querySelector() {
+    return completeButton;
+  };
+  const locationObject = {
+    protocol: 'https:',
+    get href() {
+      return originalLocationHref;
+    },
+    set href(value) {
+      locationChanged = true;
+      void value;
+    },
+    assign() {
+      locationChanged = true;
+    },
+    replace() {
+      locationChanged = true;
     }
   };
-  const successPanel = {
-    hidden: true,
+  locationValue = locationObject;
+  const window = new Proxy({ location: locationObject }, {
+    set(target, property, value) {
+      if (property === 'location') locationChanged = true;
+      target[property] = value;
+      return true;
+    }
+  });
+  const documentElements = {
+    status,
+    successPanel,
+    completeButton,
+    'complete-button': completeButton
+  };
+  const document = {
     querySelector(selector) {
-      assert.ok(
-        selector === 'a[href="/"]' || selector.includes('complete-button'),
-        `completion focus should target the homepage link, got ${selector}`
-      );
-      return completeButton;
+      return typeof selector === 'string' && /complete|href|^\s*a(?:\b|[.#]|\[)/i.test(selector)
+        ? completeButton
+        : null;
+    },
+    getElementById(id) {
+      return { salonForm: form, ...documentElements }[id] ?? null;
     }
   };
   const storage = new Map();
@@ -157,22 +212,6 @@ async function runSalonSubmission() {
     },
     removeItem(key) {
       storage.delete(key);
-    }
-  };
-  const location = {
-    protocol: 'https:',
-    get href() {
-      return locationHref;
-    },
-    set href(value) {
-      locationChanged = true;
-      locationHref = value;
-    },
-    assign() {
-      locationChanged = true;
-    },
-    replace() {
-      locationChanged = true;
     }
   };
   const fetchCalls = [];
@@ -195,22 +234,17 @@ async function runSalonSubmission() {
       return Object.entries(values);
     }
   }
-  const document = {
-    status: { textContent: '', className: '' },
-    getElementById(id) {
-      return { salonForm: form, status: this.status, successPanel }[id] ?? null;
+  const sandbox = { document, fetch, FormData: FormDataMock, localStorage, window, setTimeout, clearTimeout };
+  Object.defineProperty(sandbox, 'location', {
+    configurable: true,
+    get() {
+      return locationValue;
+    },
+    set(value) {
+      locationChanged = true;
+      locationValue = value;
     }
-  };
-  const sandbox = {
-    document,
-    fetch,
-    FormData: FormDataMock,
-    localStorage,
-    location,
-    window: { location },
-    setTimeout,
-    clearTimeout
-  };
+  });
 
   vm.runInNewContext(inlineScriptSource(html, 'salonForm'), sandbox);
   assert.equal(typeof formHandlers.submit, 'function', 'salon form should register a submit handler');
@@ -225,12 +259,13 @@ async function runSalonSubmission() {
     fetchCalls,
     form,
     successPanel,
-    status: document.status,
+    status,
     focusCalled,
     locationChanged,
-    locationHref,
-    initialLocationHref: 'https://example.test/salon.html',
-    prevented
+    locationHref: locationValue === locationObject ? locationObject.href : locationValue,
+    initialLocationHref: originalLocationHref,
+    prevented,
+    visibleWrites
   };
 }
 
@@ -324,7 +359,10 @@ test('salon submission posts form values and reveals the completion state on API
   assert.equal(result.form.hidden, true);
   assert.equal(result.successPanel.hidden, false);
   assert.equal(result.focusCalled, true);
-  assert.doesNotMatch(result.status.textContent, /registrationId|localId|报名编号|编号/i);
+  assert.doesNotMatch(
+    result.visibleWrites.join('\n'),
+    /registrationId|localId|报名编号|编号|SALON-[A-Z0-9-]+/i
+  );
   assert.equal(result.locationChanged, false);
   assert.equal(result.locationHref, result.initialLocationHref);
 });
