@@ -273,13 +273,22 @@ async function runSalonSubmission() {
   function controlledClearTimeout(timerId) {
     timerQueue.delete(timerId);
   }
-  async function runQueuedTimers() {
+  async function runQueuedTimers(context) {
     let executed = 0;
     while (timerQueue.size > 0) {
       assert.ok(executed < 20, 'salon script should not schedule an unbounded timer chain');
       const [timerId, timer] = timerQueue.entries().next().value;
       timerQueue.delete(timerId);
-      await timer.callback(...timer.args);
+      context.__salonTimerCallback = timer.callback;
+      context.__salonTimerArgs = timer.args;
+      try {
+        await vm.runInContext('__salonTimerCallback(...__salonTimerArgs)', context, {
+          timeout: 1000
+        });
+      } finally {
+        delete context.__salonTimerCallback;
+        delete context.__salonTimerArgs;
+      }
       await flushAsyncWork();
       executed += 1;
     }
@@ -318,13 +327,20 @@ async function runSalonSubmission() {
   );
   vm.runInContext(inlineScriptSource(html, 'salonForm'), context, { timeout: 1000 });
   assert.equal(typeof formHandlers.submit, 'function', 'salon form should register a submit handler');
-  await formHandlers.submit({
+  context.__salonSubmitHandler = formHandlers.submit;
+  context.__salonSubmitEvent = {
     preventDefault() {
       prevented = true;
     }
-  });
+  };
+  try {
+    await vm.runInContext('__salonSubmitHandler(__salonSubmitEvent)', context, { timeout: 1000 });
+  } finally {
+    delete context.__salonSubmitHandler;
+    delete context.__salonSubmitEvent;
+  }
   await flushAsyncWork();
-  await runQueuedTimers();
+  await runQueuedTimers(context);
 
   return {
     fetchCalls,
