@@ -199,22 +199,28 @@
     const form = document.getElementById('salonForm');
     const status = document.getElementById('status');
     const successPanel = document.getElementById('successPanel');
+    const submitButton = form.querySelector('button[type="submit"]');
     const storageKey = 'salon-registrations';
+    let isSubmitting = false;
+    let pendingLocalId = null;
     function setStatus(message, type) {
       status.textContent = message;
       status.className = `status ${type || ''}`.trim();
     }
-    function saveLocalBackup(payload) {
+    function saveLocalBackup(payload, existingLocalId) {
       const backup = {
         ...payload,
-        localId: `salon-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+        localId: existingLocalId || `salon-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
         submittedAt: new Date().toISOString()
       };
       try {
         const stored = JSON.parse(localStorage.getItem(storageKey) || '[]');
         const registrations = Array.isArray(stored) ? stored : [];
-        registrations.push(backup);
-        localStorage.setItem(storageKey, JSON.stringify(registrations));
+        const otherRegistrations = registrations.filter(
+          (registration) => registration.localId !== backup.localId
+        );
+        otherRegistrations.push(backup);
+        localStorage.setItem(storageKey, JSON.stringify(otherRegistrations));
       } catch (error) {
         // Storage can be unavailable in private or restricted browser contexts.
       }
@@ -234,6 +240,7 @@
     }
     form.addEventListener('submit', (event) => {
       event.preventDefault();
+      if (isSubmitting) return;
       const requiredFields = Array.from(form.querySelectorAll('[required]'));
       const missing = requiredFields.find((field) => !field.value.trim());
       if (missing) {
@@ -249,11 +256,13 @@
         return;
       }
       const payload = Object.fromEntries(new FormData(form).entries());
-      const localId = saveLocalBackup(payload);
+      pendingLocalId = saveLocalBackup(payload, pendingLocalId);
       if (location.protocol === 'file:') {
         setStatus('当前为本地预览，报名信息仅保存在当前浏览器，不会发送给活动方。请使用线上报名页面提交。', 'error');
         return;
       }
+      isSubmitting = true;
+      submitButton.disabled = true;
       setStatus('正在提交报名...', '');
       fetch('/api/salon-registrations', {
         method: 'POST',
@@ -262,12 +271,17 @@
       }).then((response) => {
         if (!response.ok) throw new Error(`提交失败：${response.status}`);
       }).then(() => {
-        removeLocalBackup(localId);
+        removeLocalBackup(pendingLocalId);
+        pendingLocalId = null;
         form.reset();
         form.hidden = true;
         successPanel.hidden = false;
         successPanel.querySelector('a').focus();
-      }).catch(() => setStatus('暂时无法提交，报名信息已保留，请稍后重试。', 'error'));
+      }).catch(() => setStatus('暂时无法提交，报名信息已保留，请稍后重试。', 'error'))
+        .finally(() => {
+          isSubmitting = false;
+          if (!form.hidden) submitButton.disabled = false;
+        });
     });
   </script>
 </body>

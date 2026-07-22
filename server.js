@@ -27,6 +27,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 const requiredFields = ['company', 'contact', 'phone', 'role', 'category', 'booth'];
 const salonRequiredFields = ['name', 'phone', 'company', 'role', 'topic'];
 
+function asyncRoute(handler) {
+  return (request, response, next) => {
+    Promise.resolve(handler(request, response, next)).catch(next);
+  };
+}
+
 function cleanValue(value) {
   return String(value ?? '').trim().slice(0, 2000);
 }
@@ -198,7 +204,7 @@ app.get('/api/health', (_request, response) => {
   response.json({ ok: true, service: 'falcon-expo-render' });
 });
 
-app.post('/api/applications', async (request, response) => {
+app.post('/api/applications', asyncRoute(async (request, response) => {
   const { application, missing } = normalizeApplication(request.body);
   if (missing.length) {
     response.status(400).json({ ok: false, error: 'missing_required_fields', missing });
@@ -207,13 +213,13 @@ app.post('/api/applications', async (request, response) => {
 
   await saveApplication(application);
   response.status(201).json({ ok: true, applicationId: application.id });
-});
+}));
 
 app.get('/api/salon-health', (_request, response) => {
   response.json({ ok: true, service: 'falcon-expo-salon' });
 });
 
-app.post('/api/salon-registrations', async (request, response) => {
+app.post('/api/salon-registrations', asyncRoute(async (request, response) => {
   const { registration, missing } = normalizeSalonRegistration(request.body);
   if (missing.length) {
     response.status(400).json({ ok: false, error: 'missing_required_fields', missing });
@@ -222,6 +228,15 @@ app.post('/api/salon-registrations', async (request, response) => {
 
   await saveSalonRegistration(registration);
   response.status(201).json({ ok: true, registrationId: registration.id });
+}));
+
+app.use('/api', (error, request, response, next) => {
+  console.error(`API persistence failed for ${request.path}: ${error.message}`);
+  if (response.headersSent) {
+    next(error);
+    return;
+  }
+  response.status(503).json({ ok: false, error: 'submission_unavailable' });
 });
 
 app.get('*', (_request, response) => {

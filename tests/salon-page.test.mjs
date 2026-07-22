@@ -165,6 +165,7 @@ async function runSalonSubmission(options = {}) {
   const status = trackedVisibleElement();
   const successPanel = trackedVisibleElement();
   const completeButton = trackedVisibleElement();
+  const submitButton = Object.assign(trackedVisibleElement(), { disabled: false });
   const label = trackedVisibleElement();
   const originalLocationHref = 'https://example.test/salon.html';
   let locationValue;
@@ -184,6 +185,7 @@ async function runSalonSubmission(options = {}) {
       return selector === '[required]' ? requiredControls : [];
     },
     querySelector(selector) {
+      if (selector === 'button[type="submit"]') return submitButton;
       const fieldId = selector.match(/^label\[for="([^"]+)"\]$/)?.[1];
       const labelText = {
         name: '姓名 *',
@@ -266,16 +268,27 @@ async function runSalonSubmission(options = {}) {
     }
   };
   const fetchCalls = [];
-  const fetch = async (url, requestOptions) => {
+  const pendingFetches = [];
+  const responseSequence = options.responseSequence ?? [{
+    ok: options.responseOk ?? true,
+    status: options.responseStatus ?? 201
+  }];
+  const fetch = (url, requestOptions) => {
     fetchCalls.push({ url, options: requestOptions });
-    if (options.fetchError) throw new Error('network failed');
-    return {
-      ok: options.responseOk ?? true,
-      status: options.responseStatus ?? 201,
+    const result = responseSequence[Math.min(fetchCalls.length - 1, responseSequence.length - 1)];
+    const response = {
+      ok: result.ok,
+      status: result.status,
       async json() {
         return { registrationId: 'server-only-id' };
       }
     };
+    if (options.deferFetch) {
+      return new Promise((resolve, reject) => {
+        pendingFetches.push(() => options.fetchError ? reject(new Error('network failed')) : resolve(response));
+      });
+    }
+    return options.fetchError ? Promise.reject(new Error('network failed')) : Promise.resolve(response);
   };
   class FormDataMock {
     constructor(target) {
@@ -353,25 +366,39 @@ async function runSalonSubmission(options = {}) {
   );
   vm.runInContext(inlineScriptSource(html, 'salonForm'), context, { timeout: 1000 });
   assert.equal(typeof formHandlers.submit, 'function', 'salon form should register a submit handler');
-  context.__salonSubmitHandler = formHandlers.submit;
-  context.__salonSubmitEvent = {
-    preventDefault() {
-      prevented = true;
+  async function invokeSubmit() {
+    context.__salonSubmitHandler = formHandlers.submit;
+    context.__salonSubmitEvent = {
+      preventDefault() {
+        prevented = true;
+      }
+    };
+    try {
+      await vm.runInContext('__salonSubmitHandler(__salonSubmitEvent)', context, { timeout: 1000 });
+    } finally {
+      delete context.__salonSubmitHandler;
+      delete context.__salonSubmitEvent;
     }
-  };
-  try {
-    await vm.runInContext('__salonSubmitHandler(__salonSubmitEvent)', context, { timeout: 1000 });
-  } finally {
-    delete context.__salonSubmitHandler;
-    delete context.__salonSubmitEvent;
   }
+
+  await invokeSubmit();
+  if (options.secondSubmitBeforeResponse) await invokeSubmit();
+  const disabledDuringRequest = submitButton.disabled;
+  for (const settle of pendingFetches.splice(0)) settle();
   await flushAsyncWork();
   await runQueuedTimers(context);
+  if (options.retryAfterFailure) {
+    await invokeSubmit();
+    await flushAsyncWork();
+    await runQueuedTimers(context);
+  }
 
   return {
     fetchCalls,
     form,
     successPanel,
+    submitButton,
+    disabledDuringRequest,
     status,
     controls,
     focusedField,
@@ -561,6 +588,33 @@ test('failed salon submission preserves values and backup for retry', async () =
   assert.equal(result.controls.name.value, '林鹰');
   assert.equal(registrations.length, 1);
   assert.match(result.status.textContent, /重试/);
+});
+
+test('salon submission ignores a second tap while the first request is pending', async () => {
+  const result = await runSalonSubmission({
+    deferFetch: true,
+    secondSubmitBeforeResponse: true
+  });
+
+  assert.equal(result.fetchCalls.length, 1);
+  assert.equal(result.disabledDuringRequest, true);
+  assert.equal(result.form.hidden, true);
+  assert.equal(result.successPanel.hidden, false);
+});
+
+test('a successful retry removes the backup created by the failed attempt', async () => {
+  const result = await runSalonSubmission({
+    responseSequence: [
+      { ok: false, status: 503 },
+      { ok: true, status: 201 }
+    ],
+    retryAfterFailure: true
+  });
+
+  assert.equal(result.fetchCalls.length, 2);
+  assert.deepEqual(JSON.parse(result.storage.get('salon-registrations')), []);
+  assert.equal(result.form.hidden, true);
+  assert.equal(result.successPanel.hidden, false);
 });
 
 test('localStorage failures do not block the salon API request', async () => {
