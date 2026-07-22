@@ -7,7 +7,7 @@
 ## 安全
 
 - 后台地址为 `/admin`，登录密码从 Render 环境变量 `ADMIN_PASSWORD` 读取，不写入仓库。
-- 用户指定初始密码为 `880803`。
+- 初始密码仅配置在 Render 环境变量中，不在仓库、测试或前端源码中保留明文。
 - 登录成功后签发 HttpOnly、SameSite=Strict、最长 8 小时的签名 Cookie。
 - Cookie 签名密钥由 `ADMIN_SESSION_SECRET` 环境变量提供。
 - 同一 IP 在 15 分钟内最多允许 5 次失败登录；成功登录后清空失败记录。

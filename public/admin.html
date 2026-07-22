@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>报名管理后台 | 沙特猎鹰展</title>
+  <style>
+    :root {
+      --ink: #18201d;
+      --muted: #68716d;
+      --line: #dce2df;
+      --surface: #ffffff;
+      --page: #f3f6f4;
+      --deep: #14221d;
+      --green: #176f59;
+      --green-soft: #e8f3ef;
+      --gold: #a8782f;
+      --gold-soft: #f6efe2;
+      --red: #a94842;
+      --red-soft: #f8eae8;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--page); }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--page);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    [hidden] { display: none !important; }
+
+    .login-view {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: var(--deep);
+    }
+    .login-panel {
+      width: min(100%, 380px);
+      border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: var(--radius);
+      background: var(--surface);
+      padding: 28px 24px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+    }
+    .brand-mark { color: var(--gold); font-size: 12px; font-weight: 800; }
+    .login-panel h1 { margin: 10px 0 8px; font-size: 26px; line-height: 1.25; }
+    .login-panel p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+    .login-form { display: grid; gap: 12px; margin-top: 22px; }
+    .login-form label { font-size: 13px; font-weight: 800; }
+    .login-form input,
+    .search-input {
+      width: 100%;
+      min-height: 46px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--ink);
+      padding: 10px 12px;
+      outline: none;
+    }
+    .login-form input:focus,
+    .search-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(23, 111, 89, .13); }
+    .primary-button {
+      min-height: 46px;
+      border: 0;
+      border-radius: var(--radius);
+      background: var(--green);
+      color: #fff;
+      font-weight: 800;
+    }
+    .login-status, .toolbar-status { min-height: 20px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .login-status.error, .toolbar-status.error { color: var(--red); }
+
+    .admin-shell { min-height: 100vh; }
+    .topbar {
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--deep);
+      color: #fff;
+      padding: 12px max(18px, env(safe-area-inset-left));
+    }
+    .topbar-title strong { display: block; font-size: 17px; }
+    .topbar-title span { display: block; margin-top: 3px; color: rgba(255, 255, 255, .62); font-size: 11px; }
+    .logout-button { min-height: 40px; border: 1px solid rgba(255, 255, 255, .25); border-radius: var(--radius); background: transparent; color: #fff; padding: 8px 13px; }
+
+    .content { width: min(100%, 1440px); margin: 0 auto; padding: 20px 18px 40px; }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .metric { min-height: 94px; display: grid; align-content: center; gap: 5px; padding: 16px 18px; border-left: 1px solid var(--line); }
+    .metric:first-child { border-left: 0; }
+    .metric span { color: var(--muted); font-size: 12px; }
+    .metric strong { font-size: 30px; line-height: 1; }
+    .metric.expo strong { color: var(--gold); }
+    .metric.salon strong { color: var(--red); }
+
+    .workspace { margin-top: 18px; border-top: 1px solid var(--line); background: var(--surface); }
+    .toolbar { display: grid; grid-template-columns: auto minmax(220px, 1fr) auto; gap: 12px; align-items: center; padding: 14px 0; }
+    .segments { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+    .segment { min-height: 42px; border: 0; border-left: 1px solid var(--line); background: #fff; color: var(--muted); padding: 8px 14px; font-weight: 700; white-space: nowrap; }
+    .segment:first-child { border-left: 0; }
+    .segment.active { background: var(--deep); color: #fff; }
+    .actions { display: flex; gap: 8px; }
+    .action-button { min-height: 42px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink); padding: 8px 13px; font-weight: 700; }
+    .action-button:hover { border-color: var(--green); color: var(--green); }
+    .toolbar-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); padding: 10px 0; }
+    .result-count { color: var(--muted); font-size: 12px; }
+
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+    table { width: 100%; border-collapse: collapse; min-width: 900px; background: #fff; }
+    th { background: #f7f9f8; color: var(--muted); font-size: 12px; text-align: left; padding: 11px 12px; white-space: nowrap; }
+    td { border-top: 1px solid var(--line); padding: 12px; font-size: 13px; vertical-align: middle; }
+    tbody tr:hover { background: #fafcfb; }
+    .type-badge { display: inline-flex; align-items: center; min-height: 26px; border-radius: 4px; padding: 3px 7px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .type-badge.expo { background: var(--gold-soft); color: #79531d; }
+    .type-badge.salon { background: var(--red-soft); color: #87362f; }
+    .name-cell strong { display: block; }
+    .name-cell span { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .row-button { min-height: 34px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--green); padding: 5px 10px; font-weight: 700; }
+    .records-list { display: none; }
+    .empty { border: 1px dashed var(--line); border-radius: var(--radius); color: var(--muted); padding: 40px 16px; text-align: center; }
+
+    dialog { width: min(calc(100% - 28px), 560px); max-height: calc(100vh - 40px); border: 0; border-radius: var(--radius); padding: 0; color: var(--ink); }
+    dialog::backdrop { background: rgba(10, 18, 15, .64); }
+    .dialog-head { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); background: #fff; padding: 16px 18px; }
+    .dialog-head h2 { margin: 0; font-size: 18px; }
+    .close-button { width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 50%; background: #fff; color: var(--ink); font-size: 22px; line-height: 1; }
+    .detail-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; padding: 4px 18px 22px; }
+    .detail-item { border-bottom: 1px solid var(--line); padding: 13px 0; }
+    .detail-item:nth-child(odd) { padding-right: 12px; }
+    .detail-item:nth-child(even) { padding-left: 12px; }
+    .detail-item.full { grid-column: 1 / -1; padding-left: 0; padding-right: 0; }
+    .detail-item span { display: block; color: var(--muted); font-size: 11px; }
+    .detail-item strong { display: block; margin-top: 5px; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; white-space: pre-wrap; }
+
+    @media (max-width: 760px) {
+      .content { padding: 14px 12px 32px; }
+      .summary { grid-template-columns: 1fr; }
+      .metric { min-height: 70px; grid-template-columns: 1fr auto; align-items: center; border-left: 0; border-top: 1px solid var(--line); }
+      .metric:first-child { border-top: 0; }
+      .metric strong { font-size: 26px; }
+      .toolbar { grid-template-columns: 1fr; }
+      .segments { width: 100%; }
+      .segment { flex: 1; padding-inline: 8px; }
+      .actions { display: grid; grid-template-columns: 1fr 1fr; }
+      .action-button { width: 100%; }
+      .table-wrap { display: none; }
+      .records-list { display: grid; gap: 8px; }
+      .record-card { width: 100%; display: grid; gap: 9px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink); padding: 13px; text-align: left; }
+      .record-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .record-card strong { font-size: 15px; }
+      .record-card p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+      .record-card-meta { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 11px; }
+      .detail-body { grid-template-columns: 1fr; }
+      .detail-item, .detail-item:nth-child(odd), .detail-item:nth-child(even) { padding-left: 0; padding-right: 0; }
+      .detail-item.full { grid-column: auto; }
+    }
+  </style>
+</head>
+<body>
+  <section class="login-view" id="loginView">
+    <div class="login-panel">
+      <div class="brand-mark">FALCON EXPO ADMIN</div>
+      <h1>报名管理后台</h1>
+      <p>统一查看参展申请与沙龙报名信息。</p>
+      <form class="login-form" id="loginForm">
+        <label for="password">后台密码</label>
+        <input id="password" name="password" type="password" inputmode="numeric" autocomplete="current-password" required>
+        <button class="primary-button" type="submit">登录后台</button>
+        <div class="login-status" id="loginStatus" role="status" aria-live="polite"></div>
+      </form>
+    </div>
+  </section>
+
+  <div class="admin-shell" id="adminShell" hidden>
+    <header class="topbar">
+      <div class="topbar-title"><strong>报名管理后台</strong><span>沙特国际猎鹰与狩猎展</span></div>
+      <button class="logout-button" id="logoutButton" type="button">退出登录</button>
+    </header>
+
+    <main class="content">
+      <section class="summary" aria-label="报名统计">
+        <div class="metric"><span>全部报名</span><strong id="totalCount">0</strong></div>
+        <div class="metric expo"><span>参展申请</span><strong id="expoCount">0</strong></div>
+        <div class="metric salon"><span>沙龙报名</span><strong id="salonCount">0</strong></div>
+      </section>
+
+      <section class="workspace">
+        <div class="toolbar">
+          <div class="segments" id="typeFilters" aria-label="报名类型">
+            <button class="segment active" type="button" data-type="all">全部</button>
+            <button class="segment" type="button" data-type="expo">参展申请</button>
+            <button class="segment" type="button" data-type="salon">沙龙报名</button>
+          </div>
+          <input class="search-input" id="searchInput" type="search" placeholder="搜索公司、姓名、电话、城市或意向">
+          <div class="actions">
+            <button class="action-button" id="refreshButton" type="button">刷新</button>
+            <button class="action-button" id="exportButton" type="button">导出 CSV</button>
+          </div>
+        </div>
+        <div class="toolbar-meta">
+          <div class="result-count" id="resultCount">共 0 条</div>
+          <div class="toolbar-status" id="toolbarStatus" role="status" aria-live="polite"></div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>类型</th><th>提交时间</th><th>公司 / 机构</th><th>联系人</th><th>电话</th><th>身份</th><th>意向</th><th></th></tr></thead>
+            <tbody id="recordsBody"></tbody>
+          </table>
+        </div>
+        <div class="records-list" id="recordsList"></div>
+        <div class="empty" id="emptyState" hidden>暂无符合条件的报名记录</div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="detailDialog">
+    <div class="dialog-head"><h2 id="detailTitle">报名详情</h2><button class="close-button" id="closeDialogButton" type="button" aria-label="关闭">×</button></div>
+    <div class="detail-body" id="detailBody"></div>
+  </dialog>
+
+  <script>
+    const loginView = document.getElementById('loginView');
+    const loginForm = document.getElementById('loginForm');
+    const passwordInput = document.getElementById('password');
+    const loginStatus = document.getElementById('loginStatus');
+    const adminShell = document.getElementById('adminShell');
+    const logoutButton = document.getElementById('logoutButton');
+    const refreshButton = document.getElementById('refreshButton');
+    const exportButton = document.getElementById('exportButton');
+    const searchInput = document.getElementById('searchInput');
+    const typeFilters = document.getElementById('typeFilters');
+    const toolbarStatus = document.getElementById('toolbarStatus');
+    const recordsBody = document.getElementById('recordsBody');
+    const recordsList = document.getElementById('recordsList');
+    const emptyState = document.getElementById('emptyState');
+    const resultCount = document.getElementById('resultCount');
+    const detailDialog = document.getElementById('detailDialog');
+    const detailTitle = document.getElementById('detailTitle');
+    const detailBody = document.getElementById('detailBody');
+    const closeDialogButton = document.getElementById('closeDialogButton');
+    const typeNames = { expo: '参展申请', salon: '沙龙报名' };
+    const detailLabels = {
+      category: '意向品类', booth: '展位 / 赞助意向', needs: '商务对接需求',
+      topic: '关注主题', interest: '希望链接的资源', note: '补充说明'
+    };
+    let submissions = [];
+    let filteredSubmissions = [];
+    let activeType = 'all';
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function formatDate(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+      return new Intl.DateTimeFormat('zh-CN', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      }).format(date);
+    }
+
+    function searchableText(record) {
+      return [
+        record.company, record.name, record.phone, record.email, record.city,
+        record.role, record.summary, ...Object.values(record.details || {})
+      ].join(' ').toLocaleLowerCase('zh-CN');
+    }
+
+    function currentRecords() {
+      const query = searchInput.value.trim().toLocaleLowerCase('zh-CN');
+      return submissions.filter((record) => {
+        const matchesType = activeType === 'all' || record.type === activeType;
+        return matchesType && (!query || searchableText(record).includes(query));
+      });
+    }
+
+    function render() {
+      filteredSubmissions = currentRecords();
+      document.getElementById('totalCount').textContent = submissions.length;
+      document.getElementById('expoCount').textContent = submissions.filter((item) => item.type === 'expo').length;
+      document.getElementById('salonCount').textContent = submissions.filter((item) => item.type === 'salon').length;
+      resultCount.textContent = `共 ${filteredSubmissions.length} 条`;
+      emptyState.hidden = filteredSubmissions.length !== 0;
+
+      recordsBody.innerHTML = filteredSubmissions.map((record) => `
+        <tr>
+          <td><span class="type-badge ${record.type}">${typeNames[record.type]}</span></td>
+          <td>${escapeHtml(formatDate(record.submittedAt))}</td>
+          <td>${escapeHtml(record.company || '-')}</td>
+          <td class="name-cell"><strong>${escapeHtml(record.name || '-')}</strong><span>${escapeHtml(record.city || '')}</span></td>
+          <td>${escapeHtml(record.phone || '-')}</td>
+          <td>${escapeHtml(record.role || '-')}</td>
+          <td>${escapeHtml(record.summary || '-')}</td>
+          <td><button class="row-button" type="button" data-record-id="${escapeHtml(record.id)}">查看</button></td>
+        </tr>`).join('');
+
+      recordsList.innerHTML = filteredSubmissions.map((record) => `
+        <button class="record-card" type="button" data-record-id="${escapeHtml(record.id)}">
+          <span class="record-card-head"><span class="type-badge ${record.type}">${typeNames[record.type]}</span><span>${escapeHtml(formatDate(record.submittedAt))}</span></span>
+          <strong>${escapeHtml(record.company || '-')}</strong>
+          <p>${escapeHtml(record.name || '-')} · ${escapeHtml(record.phone || '-')}<br>${escapeHtml(record.summary || '-')}</p>
+          <span class="record-card-meta"><span>${escapeHtml(record.city || '未填写城市')}</span><span>查看详情</span></span>
+        </button>`).join('');
+    }
+
+    function showLogin(message = '') {
+      adminShell.hidden = true;
+      loginView.hidden = false;
+      loginStatus.textContent = message;
+      loginStatus.className = `login-status${message ? ' error' : ''}`;
+      passwordInput.value = '';
+      passwordInput.focus();
+    }
+
+    function showAdmin() {
+      loginView.hidden = true;
+      adminShell.hidden = false;
+    }
+
+    async function loadSubmissions(options = {}) {
+      toolbarStatus.textContent = options.silent ? '' : '正在刷新...';
+      try {
+        const response = await fetch('/api/admin/submissions', { credentials: 'same-origin' });
+        if (response.status === 401) {
+          showLogin(options.silent ? '' : '登录已失效，请重新登录');
+          return false;
+        }
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || 'load_failed');
+        }
+        submissions = Array.isArray(payload.submissions) ? payload.submissions : [];
+        showAdmin();
+        render();
+        toolbarStatus.textContent = `更新于 ${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`;
+        toolbarStatus.className = 'toolbar-status';
+        return true;
+      } catch (error) {
+        if (options.silent) showLogin('');
+        else {
+          toolbarStatus.textContent = error.message === 'admin_not_configured' ? '后台环境变量尚未配置' : '读取失败，请稍后重试';
+          toolbarStatus.className = 'toolbar-status error';
+        }
+        return false;
+      }
+    }
+
+    loginForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submitButton = loginForm.querySelector('button[type="submit"]');
+      submitButton.disabled = true;
+      loginStatus.textContent = '正在登录...';
+      loginStatus.className = 'login-status';
+      try {
+        const response = await fetch('/api/admin/login', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: passwordInput.value })
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          const messages = {
+            invalid_credentials: '密码错误',
+            too_many_attempts: '尝试次数过多，请15分钟后再试',
+            admin_not_configured: '后台环境变量尚未配置'
+          };
+          throw new Error(messages[payload.error] || '登录失败');
+        }
+        passwordInput.value = '';
+        await loadSubmissions();
+      } catch (error) {
+        loginStatus.textContent = error.message || '登录失败';
+        loginStatus.className = 'login-status error';
+        passwordInput.select();
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+
+    typeFilters.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-type]');
+      if (!button) return;
+      activeType = button.dataset.type;
+      typeFilters.querySelectorAll('[data-type]').forEach((item) => item.classList.toggle('active', item === button));
+      render();
+    });
+    searchInput.addEventListener('input', render);
+    refreshButton.addEventListener('click', () => loadSubmissions());
+
+    function openDetails(id) {
+      const record = submissions.find((item) => item.id === id);
+      if (!record) return;
+      detailTitle.textContent = `${typeNames[record.type]}详情`;
+      const fields = [
+        ['报名类型', typeNames[record.type]], ['提交时间', formatDate(record.submittedAt)],
+        ['公司 / 机构', record.company], ['联系人', record.name], ['手机 / 微信', record.phone],
+        ['邮箱', record.email], ['城市', record.city], ['身份 / 职位', record.role],
+        ...Object.entries(record.details || {}).map(([key, value]) => [detailLabels[key] || key, value])
+      ];
+      detailBody.innerHTML = fields.map(([label, value]) => `
+        <div class="detail-item ${String(value || '').length > 28 ? 'full' : ''}">
+          <span>${escapeHtml(label)}</span><strong>${escapeHtml(value || '未填写')}</strong>
+        </div>`).join('');
+      detailDialog.showModal();
+    }
+    document.addEventListener('click', (event) => {
+      const target = event.target.closest('[data-record-id]');
+      if (target) openDetails(target.dataset.recordId);
+    });
+    closeDialogButton.addEventListener('click', () => detailDialog.close());
+    detailDialog.addEventListener('click', (event) => {
+      if (event.target === detailDialog) detailDialog.close();
+    });
+
+    function csvCell(value) {
+      return `"${String(value ?? '').replaceAll('"', '""')}"`;
+    }
+    exportButton.addEventListener('click', () => {
+      if (!filteredSubmissions.length) {
+        toolbarStatus.textContent = '当前没有可导出的记录';
+        return;
+      }
+      const headers = ['类型', '提交时间', '公司/机构', '联系人', '电话', '邮箱', '城市', '身份/职位', '意向', '意向品类', '展位/赞助', '商务需求', '关注主题', '链接资源', '备注'];
+      const rows = filteredSubmissions.map((record) => [
+        typeNames[record.type], formatDate(record.submittedAt), record.company, record.name,
+        record.phone, record.email, record.city, record.role, record.summary,
+        record.details?.category, record.details?.booth, record.details?.needs,
+        record.details?.topic, record.details?.interest, record.details?.note
+      ]);
+      const csv = [headers, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n');
+      const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `falcon-registrations-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    });
+
+    logoutButton.addEventListener('click', async () => {
+      await fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' });
+      submissions = [];
+      render();
+      showLogin();
+    });
+
+    loadSubmissions({ silent: true });
+  </script>
+</body>
+</html>

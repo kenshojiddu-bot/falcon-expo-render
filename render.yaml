@@ -11,3 +11,7 @@ services:
         value: /tmp/falcon-expo
       - key: DATABASE_URL
         sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_SESSION_SECRET
+        sync: false

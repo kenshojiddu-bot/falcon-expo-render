@@ -1,6 +1,6 @@
 import express from 'express';
 import pg from 'pg';
-import { randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +19,13 @@ const pool = databaseUrl
       ssl: databaseUrl.includes('localhost') ? false : { rejectUnauthorized: false }
     })
   : null;
+const adminPassword = process.env.ADMIN_PASSWORD || '';
+const adminSessionSecret = process.env.ADMIN_SESSION_SECRET || '';
+const adminCookieName = 'falcon_admin_session';
+const adminSessionDurationMs = 8 * 60 * 60 * 1000;
+const adminAttemptWindowMs = 15 * 60 * 1000;
+const adminMaxAttempts = 5;
+const adminLoginAttempts = new Map();
 
 app.use(express.json({ limit: '64kb' }));
 app.use(express.urlencoded({ extended: false, limit: '64kb' }));
@@ -35,6 +42,98 @@ function asyncRoute(handler) {
 
 function cleanValue(value) {
   return String(value ?? '').trim().slice(0, 2000);
+}
+
+function constantTimeEqual(left, right) {
+  const leftHash = createHash('sha256').update(String(left)).digest();
+  const rightHash = createHash('sha256').update(String(right)).digest();
+  return timingSafeEqual(leftHash, rightHash);
+}
+
+function adminConfigured() {
+  return Boolean(adminPassword && adminSessionSecret);
+}
+
+function requestIp(request) {
+  const forwarded = String(request.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return forwarded || request.ip || request.socket.remoteAddress || 'unknown';
+}
+
+function activeLoginAttempt(ip, now = Date.now()) {
+  const attempt = adminLoginAttempts.get(ip);
+  if (!attempt || attempt.resetAt <= now) {
+    adminLoginAttempts.delete(ip);
+    return null;
+  }
+  return attempt;
+}
+
+function recordFailedLogin(ip, now = Date.now()) {
+  const current = activeLoginAttempt(ip, now);
+  adminLoginAttempts.set(ip, current
+    ? { count: current.count + 1, resetAt: current.resetAt }
+    : { count: 1, resetAt: now + adminAttemptWindowMs });
+}
+
+function sessionToken(expiresAt) {
+  const payload = String(expiresAt);
+  const signature = createHmac('sha256', adminSessionSecret).update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+}
+
+function parseCookies(request) {
+  return Object.fromEntries(
+    String(request.headers.cookie || '')
+      .split(';')
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        const separator = part.indexOf('=');
+        return separator === -1
+          ? [part, '']
+          : [part.slice(0, separator), part.slice(separator + 1)];
+      })
+  );
+}
+
+function validAdminSession(request) {
+  if (!adminConfigured()) return false;
+  const token = parseCookies(request)[adminCookieName];
+  if (!token) return false;
+  const separator = token.indexOf('.');
+  if (separator === -1) return false;
+  const expiresAt = Number(token.slice(0, separator));
+  const signature = token.slice(separator + 1);
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return false;
+  const expected = createHmac('sha256', adminSessionSecret)
+    .update(String(expiresAt))
+    .digest('base64url');
+  return constantTimeEqual(signature, expected);
+}
+
+function adminCookie(request, value, maxAgeSeconds) {
+  const secure = request.secure || request.headers['x-forwarded-proto'] === 'https';
+  return [
+    `${adminCookieName}=${value}`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Strict',
+    `Max-Age=${maxAgeSeconds}`,
+    ...(secure ? ['Secure'] : [])
+  ].join('; ');
+}
+
+function requireAdmin(request, response, next) {
+  response.set('Cache-Control', 'no-store');
+  if (!adminConfigured()) {
+    response.status(503).json({ ok: false, error: 'admin_not_configured' });
+    return;
+  }
+  if (!validAdminSession(request)) {
+    response.status(401).json({ ok: false, error: 'authentication_required' });
+    return;
+  }
+  next();
 }
 
 function normalizeApplication(body) {
@@ -94,26 +193,50 @@ async function readSalonRegistrations() {
   }
 }
 
+async function ensureApplicationsTable() {
+  await pool.query(`
+    create table if not exists falcon_applications (
+      id text primary key,
+      submitted_at timestamptz not null,
+      company text not null,
+      contact text not null,
+      phone text not null,
+      email text,
+      city text,
+      role text not null,
+      category text not null,
+      booth text not null,
+      needs text,
+      note text,
+      source text not null,
+      raw_json jsonb not null
+    )
+  `);
+}
+
+async function ensureSalonRegistrationsTable() {
+  await pool.query(`
+    create table if not exists salon_registrations (
+      id text primary key,
+      submitted_at timestamptz not null,
+      name text not null,
+      company text not null,
+      role text not null,
+      phone text not null,
+      email text,
+      city text,
+      topic text not null,
+      interest text,
+      note text,
+      source text not null,
+      raw_json jsonb not null
+    )
+  `);
+}
+
 async function saveApplication(application) {
   if (pool) {
-    await pool.query(`
-      create table if not exists falcon_applications (
-        id text primary key,
-        submitted_at timestamptz not null,
-        company text not null,
-        contact text not null,
-        phone text not null,
-        email text,
-        city text,
-        role text not null,
-        category text not null,
-        booth text not null,
-        needs text,
-        note text,
-        source text not null,
-        raw_json jsonb not null
-      )
-    `);
+    await ensureApplicationsTable();
     await pool.query(
       `
         insert into falcon_applications (
@@ -150,23 +273,7 @@ async function saveApplication(application) {
 
 async function saveSalonRegistration(registration) {
   if (pool) {
-    await pool.query(`
-      create table if not exists salon_registrations (
-        id text primary key,
-        submitted_at timestamptz not null,
-        name text not null,
-        company text not null,
-        role text not null,
-        phone text not null,
-        email text,
-        city text,
-        topic text not null,
-        interest text,
-        note text,
-        source text not null,
-        raw_json jsonb not null
-      )
-    `);
+    await ensureSalonRegistrationsTable();
     await pool.query(
       `
         insert into salon_registrations (
@@ -199,6 +306,142 @@ async function saveSalonRegistration(registration) {
   registrations.unshift(registration);
   await writeFile(salonSubmissionsFile, JSON.stringify(registrations, null, 2));
 }
+
+function adminExpoRecord(application) {
+  return {
+    type: 'expo',
+    id: application.id,
+    submittedAt: application.submittedAt,
+    company: application.company,
+    name: application.contact,
+    phone: application.phone,
+    email: application.email || '',
+    city: application.city || '',
+    role: application.role,
+    summary: application.category,
+    details: {
+      category: application.category,
+      booth: application.booth,
+      needs: application.needs || '',
+      note: application.note || ''
+    }
+  };
+}
+
+function adminSalonRecord(registration) {
+  return {
+    type: 'salon',
+    id: registration.id,
+    submittedAt: registration.submittedAt,
+    company: registration.company,
+    name: registration.name,
+    phone: registration.phone,
+    email: registration.email || '',
+    city: registration.city || '',
+    role: registration.role,
+    summary: registration.topic,
+    details: {
+      topic: registration.topic,
+      interest: registration.interest || '',
+      note: registration.note || ''
+    }
+  };
+}
+
+async function loadAdminApplications() {
+  if (!pool) return (await readApplications()).map(adminExpoRecord);
+  await ensureApplicationsTable();
+  const result = await pool.query(`
+    select
+      id,
+      submitted_at as "submittedAt",
+      company,
+      contact,
+      phone,
+      email,
+      city,
+      role,
+      category,
+      booth,
+      needs,
+      note
+    from falcon_applications
+    order by submitted_at desc
+  `);
+  return result.rows.map(adminExpoRecord);
+}
+
+async function loadAdminSalonRegistrations() {
+  if (!pool) return (await readSalonRegistrations()).map(adminSalonRecord);
+  await ensureSalonRegistrationsTable();
+  const result = await pool.query(`
+    select
+      id,
+      submitted_at as "submittedAt",
+      name,
+      company,
+      role,
+      phone,
+      email,
+      city,
+      topic,
+      interest,
+      note
+    from salon_registrations
+    order by submitted_at desc
+  `);
+  return result.rows.map(adminSalonRecord);
+}
+
+async function loadAdminSubmissions() {
+  const [applications, registrations] = await Promise.all([
+    loadAdminApplications(),
+    loadAdminSalonRegistrations()
+  ]);
+  return [...applications, ...registrations].sort(
+    (left, right) => Date.parse(right.submittedAt) - Date.parse(left.submittedAt)
+  );
+}
+
+app.post('/api/admin/login', (request, response) => {
+  response.set('Cache-Control', 'no-store');
+  if (!adminConfigured()) {
+    response.status(503).json({ ok: false, error: 'admin_not_configured' });
+    return;
+  }
+
+  const ip = requestIp(request);
+  const attempt = activeLoginAttempt(ip);
+  if (attempt?.count >= adminMaxAttempts) {
+    response.status(429).json({ ok: false, error: 'too_many_attempts' });
+    return;
+  }
+
+  if (!constantTimeEqual(cleanValue(request.body.password), adminPassword)) {
+    recordFailedLogin(ip);
+    response.status(401).json({ ok: false, error: 'invalid_credentials' });
+    return;
+  }
+
+  adminLoginAttempts.delete(ip);
+  const expiresAt = Date.now() + adminSessionDurationMs;
+  response.set('Set-Cookie', adminCookie(
+    request,
+    sessionToken(expiresAt),
+    Math.floor(adminSessionDurationMs / 1000)
+  ));
+  response.json({ ok: true });
+});
+
+app.post('/api/admin/logout', (request, response) => {
+  response.set('Cache-Control', 'no-store');
+  response.set('Set-Cookie', adminCookie(request, '', 0));
+  response.json({ ok: true });
+});
+
+app.get('/api/admin/submissions', requireAdmin, asyncRoute(async (_request, response) => {
+  response.json({ ok: true, submissions: await loadAdminSubmissions() });
+}));
 
 app.get('/api/health', (_request, response) => {
   response.json({ ok: true, service: 'falcon-expo-render' });
@@ -242,6 +485,10 @@ app.use('/api', (error, request, response, next) => {
   }
   console.error(`API persistence failed for ${request.path}: ${error.message}`);
   response.status(503).json({ ok: false, error: 'submission_unavailable' });
+});
+
+app.get('/admin', (_request, response) => {
+  response.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 app.get('*', (_request, response) => {
