@@ -106,12 +106,12 @@ def make_poster(qr_image):
     draw = ImageDraw.Draw(poster, "RGBA")
 
     margin = 64
-    draw.text((margin, 76), "高端商务沙龙  ·  成都", font=font(30), fill=COPPER)
-    draw.text((margin, 148), "精品东方", font=font(96), fill=WHITE)
-    draw.text((margin, 258), "鹰耀出海", font=font(96), fill=WHITE)
+    draw.text((margin, 76), "高端商务沙龙  ·  成都", font=font(32), fill=COPPER)
+    draw.text((margin, 148), "精品东方", font=font(104), fill=WHITE)
+    draw.text((margin, 270), "鹰耀出海", font=font(104), fill=WHITE)
     draw.rectangle((margin, 398, 260, 404), fill=COPPER)
 
-    intro_top = 468
+    intro_top = 494
     shadow = (8, 7, 6, 210)
     draw.text(
         (margin, intro_top),
@@ -130,7 +130,7 @@ def make_poster(qr_image):
         draw,
         (margin, intro_top + 66),
         overview,
-        font(34),
+        font(38),
         WHITE,
         WIDTH - 2 * margin,
         14,
@@ -140,17 +140,17 @@ def make_poster(qr_image):
     draw.text(
         (margin, intro_end + 20),
         "沙特猎鹰展推介  ·  AI+文旅出海",
-        font=font(29),
+        font=font(32),
         fill=COPPER,
         stroke_width=2,
         stroke_fill=shadow,
     )
 
-    info_top = 960
+    info_top = 1008
     draw.text(
         (margin, info_top),
         "2026年8月7日",
-        font=font(52),
+        font=font(58),
         fill=COPPER,
         stroke_width=2,
         stroke_fill=shadow,
@@ -158,7 +158,7 @@ def make_poster(qr_image):
     draw.text(
         (margin, info_top + 76),
         "15:00 主题活动   |   18:00 精品晚宴",
-        font=font(33),
+        font=font(38),
         fill=WHITE,
         stroke_width=2,
         stroke_fill=shadow,
@@ -166,7 +166,7 @@ def make_poster(qr_image):
     draw.text(
         (margin, info_top + 142),
         "成都高新区豪生酒店",
-        font=font(39),
+        font=font(44),
         fill=WHITE,
         stroke_width=2,
         stroke_fill=shadow,
@@ -174,16 +174,63 @@ def make_poster(qr_image):
     draw.text(
         (margin, info_top + 202),
         "成都市武侯区天泰路338号",
-        font=font(29),
+        font=font(33),
         fill=MUTED_WHITE,
         stroke_width=2,
         stroke_fill=shadow,
     )
 
+    flow_top = 1328
+    draw.text(
+        (margin, flow_top),
+        "现场流程",
+        font=font(38),
+        fill=COPPER,
+        stroke_width=2,
+        stroke_fill=shadow,
+    )
+    draw.text(
+        (margin, flow_top + 64),
+        "15:00 下午场",
+        font=font(35),
+        fill=COPPER,
+        stroke_width=2,
+        stroke_fill=shadow,
+    )
+    draw_wrapped(
+        draw,
+        (margin + 190, flow_top + 65),
+        "茅台鸡尾酒迎宾 · 机器人迎宾 · 茅台产品文化展 · 闻香识酒 · 非遗互动 · AI+文旅出海主题沙龙 · 开鱼秀",
+        font(30),
+        WHITE,
+        720,
+        8,
+        stroke_width=2,
+        stroke_fill=shadow,
+    )
+    draw.text(
+        (margin, flow_top + 166),
+        "18:00 晚宴场",
+        font=font(35),
+        fill=COPPER,
+        stroke_width=2,
+        stroke_fill=shadow,
+    )
+    draw_wrapped(
+        draw,
+        (margin + 190, flow_top + 167),
+        "机器人舞蹈 · 产品走秀 · 品鉴知识讲解 · 东方主题节目 · 抽奖及茅台互动游戏",
+        font(30),
+        WHITE,
+        720,
+        8,
+        stroke_width=2,
+        stroke_fill=shadow,
+    )
     draw.text(
         (margin, 1716),
         "席位有限  ·  提交后联系确认",
-        font=font(27),
+        font=font(30),
         fill=WHITE,
         stroke_width=2,
         stroke_fill=shadow,
