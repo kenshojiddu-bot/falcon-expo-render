@@ -3,462 +3,231 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>出海沙龙报名</title>
+  <title>精品东方 鹰耀出海 | 高端商务沙龙</title>
   <style>
     :root {
-      --ink: #111827;
-      --muted: #667085;
-      --line: #e4e7ec;
-      --panel: #ffffff;
-      --gold: #b8892e;
-      --green: #0f766e;
-      --red: #b42318;
+      --charcoal: #171615;
+      --charcoal-soft: #282522;
+      --copper: #b97838;
+      --copper-light: #e2b574;
+      --vermilion: #b73a2f;
+      --paper: #f7f5f0;
+      --white: #fffdfa;
+      --ink: #25211e;
+      --muted: #736b62;
+      --line: #e4ddd4;
       --radius: 8px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      min-height: 100%;
-      background: #111827;
-      scroll-behavior: smooth;
-    }
-
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--charcoal); scroll-behavior: smooth; }
     body {
       margin: 0;
       min-height: 100vh;
-      background:
-        radial-gradient(circle at 50% -120px, rgba(184, 137, 46, 0.25), transparent 360px),
-        linear-gradient(180deg, #111827, #1f2937);
       color: var(--ink);
+      background: var(--charcoal);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
       letter-spacing: 0;
     }
+    button, input, select, textarea { font: inherit; }
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, p { margin: 0; }
 
-    button,
-    input,
-    select,
-    textarea {
-      font: inherit;
-    }
-
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    .shell {
-      width: min(100%, 430px);
-      min-height: 100vh;
-      margin: 0 auto;
-      background: #f7f4ee;
-      box-shadow: 0 0 70px rgba(0, 0, 0, 0.36);
-    }
-
+    .shell { width: min(100%, 430px); min-height: 100vh; margin: 0 auto; background: var(--paper); }
     .hero {
       position: relative;
+      min-height: 720px;
+      display: flex;
+      align-items: flex-end;
       overflow: hidden;
-      min-height: 72vh;
-      display: grid;
-      align-items: end;
-      background: #111827;
-      color: #ffffff;
-      padding: 28px 18px 48px;
+      padding: 30px 20px 48px;
+      color: var(--white);
+      background: var(--charcoal);
     }
-
     .hero::before {
       content: "";
       position: absolute;
       inset: 0;
-      background:
-        linear-gradient(180deg, rgba(17, 24, 39, 0.18), rgba(17, 24, 39, 0.72)),
-        url("falcon-expo-assets/hero.png") center / cover no-repeat;
-      filter: saturate(0.82);
-      transform: scale(1.03);
+      background: linear-gradient(180deg, rgba(23, 22, 21, .16) 10%, rgba(23, 22, 21, .86) 92%), url("falcon-expo-assets/hero-falcon.jpg") center / cover no-repeat;
+      filter: saturate(.82);
+      transform: scale(1.02);
     }
-
     .hero::after {
       content: "";
       position: absolute;
-      inset: auto 0 -1px;
-      height: 72px;
-      background: linear-gradient(180deg, transparent, #f7f4ee);
+      inset: 0;
+      pointer-events: none;
+      border-bottom: 1px solid rgba(226, 181, 116, .5);
     }
+    .hero-content { position: relative; z-index: 1; width: 100%; display: grid; gap: 16px; }
+    .eyebrow { color: var(--copper-light); font-size: 12px; font-weight: 800; letter-spacing: 2px; }
+    h1 { font-family: Georgia, "Songti SC", "SimSun", serif; font-size: 46px; line-height: 1.12; font-weight: 700; }
+    .lead { max-width: 350px; color: rgba(255, 253, 250, .9); font-size: 15px; line-height: 1.75; }
+    .hero-meta { display: grid; gap: 8px; border-left: 2px solid var(--copper); padding-left: 12px; }
+    .hero-meta strong { color: var(--copper-light); font-size: 16px; }
+    .hero-meta span { color: rgba(255, 253, 250, .82); font-size: 13px; line-height: 1.65; }
+    .cta, .submit { min-height: 50px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius); font-weight: 800; cursor: pointer; }
+    .cta { margin-top: 4px; background: var(--copper-light); color: var(--charcoal); }
 
-    .hero-content {
-      position: relative;
-      z-index: 1;
-      display: grid;
-      gap: 14px;
-    }
-
-    .eyebrow {
-      width: fit-content;
-      min-height: 30px;
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      border-radius: var(--radius);
-      background: rgba(17, 24, 39, 0.58);
-      padding: 6px 10px;
-      color: #fff4d6;
-      font-size: 12px;
-      font-weight: 850;
-    }
-
-    h1,
-    h2,
-    p {
-      margin: 0;
-    }
-
-    h1 {
-      font-size: 44px;
-      line-height: 1.05;
-      letter-spacing: 0;
-      text-wrap: balance;
-    }
-
-    .lead {
-      color: rgba(255, 255, 255, 0.86);
-      font-size: 15px;
-      line-height: 1.75;
-    }
-
-    .hero-card {
-      display: grid;
-      gap: 8px;
-      margin-top: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: var(--radius);
-      background: rgba(17, 24, 39, 0.64);
-      padding: 14px;
-      backdrop-filter: blur(12px);
-    }
-
-    .hero-card strong {
-      color: #ffffff;
-      font-size: 17px;
-    }
-
-    .hero-card span {
-      color: #fff4d6;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .cta {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 50px;
-      border-radius: var(--radius);
-      background: linear-gradient(135deg, #f3d37a, #b8892e);
-      color: #17120a;
-      font-weight: 950;
-      box-shadow: 0 14px 36px rgba(184, 137, 46, 0.26);
-    }
-
-    main {
-      display: grid;
-      gap: 12px;
-      padding: 0 12px 42px;
-    }
-
-    .section {
-      border: 1px solid rgba(228, 231, 236, 0.94);
-      border-radius: var(--radius);
-      background: var(--panel);
-      box-shadow: 0 12px 28px rgba(16, 24, 40, 0.06);
-      padding: 16px;
-    }
-
-    .section h2 {
-      margin-bottom: 10px;
-      font-size: 20px;
-      line-height: 1.25;
-    }
-
-    .section p,
-    .feature p {
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.7;
-    }
-
-    .feature-grid {
-      display: grid;
-      gap: 9px;
-    }
-
-    .feature {
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: #f9fafb;
-      padding: 12px;
-    }
-
-    .feature strong {
-      display: block;
-      margin-bottom: 5px;
-      color: var(--ink);
-      font-size: 15px;
-    }
-
-    .form {
-      display: grid;
-      gap: 12px;
-    }
-
-    .field {
-      display: grid;
-      gap: 6px;
-    }
-
-    .field label {
-      color: #1f2937;
-      font-size: 13px;
-      font-weight: 850;
-    }
-
-    .field input,
-    .field select,
-    .field textarea {
-      width: 100%;
-      min-height: 46px;
-      border: 1px solid #d0d5dd;
-      border-radius: var(--radius);
-      background: #ffffff;
-      color: var(--ink);
-      padding: 10px 11px;
-      outline: none;
-    }
-
-    .field textarea {
-      min-height: 92px;
-      resize: vertical;
-    }
-
-    .field input:focus,
-    .field select:focus,
-    .field textarea:focus {
-      border-color: var(--gold);
-      box-shadow: 0 0 0 3px rgba(184, 137, 46, 0.14);
-    }
-
-    .submit {
-      min-height: 50px;
-      border: 0;
-      border-radius: var(--radius);
-      background: #111827;
-      color: #ffffff;
-      padding: 11px 14px;
-      cursor: pointer;
-      font-weight: 950;
-    }
-
-    .note,
-    .status {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.55;
-    }
-
-    .status {
-      min-height: 20px;
-      font-weight: 850;
-    }
-
-    .status.success {
-      color: var(--green);
-    }
-
-    .status.error {
-      color: var(--red);
-    }
-
-    .footer-link {
-      display: block;
-      color: var(--muted);
-      font-size: 13px;
-      text-align: center;
-      padding: 8px 0 0;
-    }
-
-    @media (min-width: 431px) {
-      .shell {
-        margin-top: 18px;
-        margin-bottom: 18px;
-        border-radius: 18px;
-        overflow: hidden;
-      }
-    }
+    main { display: grid; gap: 12px; padding: 12px 12px 42px; }
+    .section { border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); padding: 18px 16px; }
+    .section h2 { display: flex; align-items: center; gap: 9px; margin-bottom: 11px; color: var(--charcoal); font-family: Georgia, "Songti SC", "SimSun", serif; font-size: 23px; line-height: 1.25; }
+    .section h2::before { content: ""; width: 4px; height: 22px; background: var(--copper); flex: 0 0 auto; }
+    .section > p, .feature p, .flow-note, .audience p { color: var(--muted); font-size: 14px; line-height: 1.75; }
+    .photo-break { width: 100%; aspect-ratio: 16 / 10; display: block; object-fit: cover; border-radius: var(--radius); }
+    .photo-caption { margin-top: 9px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .feature-grid { display: grid; gap: 8px; }
+    .feature { border-top: 1px solid var(--line); padding: 12px 0 2px; }
+    .feature:first-child { border-top: 0; padding-top: 0; }
+    .feature strong { display: block; margin-bottom: 4px; color: var(--charcoal); font-size: 16px; }
+    .feature strong::before { content: "0"; display: inline-block; width: 22px; color: var(--copper); font-family: Georgia, serif; font-size: 13px; }
+    .feature:nth-child(2) strong::before { content: "02"; }
+    .feature:nth-child(3) strong::before { content: "03"; }
+    .feature:first-child strong::before { content: "01"; }
+    .flow-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+    .flow-head h2 { margin-bottom: 3px; }
+    .time { color: var(--vermilion); font-family: Georgia, serif; font-size: 22px; font-weight: 700; white-space: nowrap; }
+    .flow-list { display: grid; gap: 0; margin: 14px 0 0; padding: 0; list-style: none; }
+    .flow-list li { position: relative; min-height: 44px; display: flex; align-items: center; border-top: 1px solid var(--line); padding: 9px 0 9px 28px; font-size: 14px; font-weight: 700; }
+    .flow-list li::before { content: ""; position: absolute; left: 6px; width: 8px; height: 8px; border: 2px solid var(--copper); border-radius: 50%; }
+    .flow-list li::after { content: ""; position: absolute; left: 10px; top: 25px; bottom: -9px; width: 1px; background: var(--line); }
+    .flow-list li:last-child::after { display: none; }
+    .flow-note { margin-top: 11px; }
+    .audience { display: grid; gap: 8px; }
+    .audience span { display: block; border: 1px solid var(--line); border-radius: var(--radius); padding: 11px 12px; color: var(--charcoal-soft); font-size: 14px; font-weight: 700; }
+    .form { display: grid; gap: 12px; }
+    .field { display: grid; gap: 6px; }
+    .field label { color: var(--charcoal-soft); font-size: 13px; font-weight: 800; }
+    .field input, .field select, .field textarea { width: 100%; min-height: 46px; border: 1px solid #d5cec5; border-radius: var(--radius); background: #fff; color: var(--ink); padding: 10px 11px; outline: none; }
+    .field textarea { min-height: 88px; resize: vertical; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--copper); box-shadow: 0 0 0 3px rgba(185, 120, 56, .15); }
+    .submit { width: 100%; border: 0; background: var(--charcoal); color: var(--white); }
+    .note, .status { min-height: 20px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .status.error { color: var(--vermilion); }
+    .status.success { color: #2d6a4f; }
+    .success-panel { display: grid; gap: 11px; border-color: var(--copper); background: #fffaf1; }
+    .success-panel h2 { margin-bottom: 0; }
+    .success-panel a { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius); background: var(--copper); color: var(--white); font-weight: 800; }
+    .footer-link { display: block; padding: 8px 0 0; color: var(--muted); font-size: 13px; text-align: center; }
+    [hidden] { display: none !important; }
+    @media (min-width: 431px) { .shell { margin: 18px auto; border-radius: 8px; overflow: hidden; box-shadow: 0 0 70px rgba(0, 0, 0, .35); } }
   </style>
 </head>
 <body>
   <div class="shell">
     <header class="hero">
       <div class="hero-content">
-        <span class="eyebrow">Global Growth Salon</span>
-        <h1>出海沙龙报名</h1>
-        <p class="lead">面向计划进入中东、东南亚及全球市场的品牌、服务商与创业团队，聚焦渠道、合规、获客与本地化落地。</p>
-        <div class="hero-card">
-          <strong>时间地点：报名后通知</strong>
-          <span>小范围交流 · 席位有限 · 通过报名后由工作人员联系确认</span>
+        <p class="eyebrow">ORIENTAL FALCON SALON · 成都</p>
+        <h1>精品东方<br>鹰耀出海</h1>
+        <p class="lead">以精品茅台为文化纽带，以AI+文旅出海为时代背景的高端商务沙龙与主题活动。</p>
+        <div class="hero-meta">
+          <strong>2026年8月7日 · 周五</strong>
+          <span>15:00 主题活动　18:00 精品晚宴<br>成都高新区豪生酒店 · 成都市/武侯区天泰路338号<br>定向邀约100余位</span>
         </div>
-        <a class="cta" href="#register">立即报名</a>
+        <a class="cta" href="#register">限额报名</a>
       </div>
     </header>
 
     <main>
       <section class="section">
-        <h2>适合谁参加</h2>
+        <h2>活动概述</h2>
+        <p>一场以东方精品文化为入口的深度相聚。我们将茅台的酿造智慧、非遗体验与 AI+文旅出海议题置于同一现场，让品牌表达、技术想象与真实商务关系自然发生。</p>
+      </section>
+
+      <img class="photo-break" src="falcon-expo-assets/salon-expo.jpg" alt="猎鹰展现场的人群与展馆" loading="lazy">
+
+      <section class="section">
+        <h2>三大价值</h2>
         <div class="feature-grid">
-          <article class="feature">
-            <strong>准备出海的品牌方</strong>
-            <p>希望验证目标市场、寻找渠道伙伴、理解本地用户与商业规则。</p>
-          </article>
-          <article class="feature">
-            <strong>跨境服务与供应链团队</strong>
-            <p>希望链接品牌客户，展示支付、物流、合规、营销或落地服务能力。</p>
-          </article>
-          <article class="feature">
-            <strong>投资人与生态伙伴</strong>
-            <p>关注中东、东南亚和全球增长机会，希望发现优质项目与合作入口。</p>
-          </article>
+          <article class="feature"><strong>品牌文化输出</strong><p>以精品茅台为文化纽带，沉浸式呈现东方审美、产品文化与非遗技艺的当代表达。</p></article>
+          <article class="feature"><strong>战略资源链接</strong><p>汇聚出海企业家、海外嘉宾与 AI 科技企业代表，打开跨界协作与高质量资源对话。</p></article>
+          <article class="feature"><strong>企业家圈层社交</strong><p>在小而精的主题交流与精品晚宴中，结识值得长期往来的伙伴与高净值客户。</p></article>
         </div>
       </section>
 
       <section class="section">
-        <h2>交流主题</h2>
-        <p>我们会围绕目标市场选择、渠道搭建、线索获客、展会转化、合规与收款、本地合作伙伴筛选等问题展开。你也可以在报名表里写下最想讨论的问题。</p>
+        <div class="flow-head"><h2>下午场</h2><span class="time">15:00</span></div>
+        <p class="flow-note">从东方待客之道开始，以文化体验连接新一代出海议题。</p>
+        <ol class="flow-list">
+          <li>茅台鸡尾酒迎宾</li><li>机器人迎宾</li><li>茅台产品文化展</li><li>闻香识酒</li><li>非遗互动</li><li>AI+文旅出海主题沙龙</li><li>开鱼秀</li>
+        </ol>
+      </section>
+
+      <section class="section">
+        <div class="flow-head"><h2>晚宴场</h2><span class="time">18:00</span></div>
+        <p class="flow-note">以精品晚宴收束一天的交流，让产品、节目与现场互动成为共同记忆。</p>
+        <ol class="flow-list">
+          <li>机器人舞蹈</li><li>产品走秀</li><li>品鉴知识讲解</li><li>东方主题节目</li><li>抽奖及茅台互动游戏</li>
+        </ol>
+      </section>
+
+      <section class="section">
+        <h2>适合参与人群</h2>
+        <div class="audience">
+          <span>出海企业家</span><span>海外嘉宾</span><span>AI科技企业代表</span><span>高净值客户</span>
+          <p>本场为定向邀约100余位的高端商务沙龙，席位将依据报名信息确认。</p>
+        </div>
       </section>
 
       <section class="section" id="register">
-        <h2>报名信息</h2>
+        <h2>限额报名</h2>
         <form class="form" id="salonForm" novalidate>
-          <div class="field">
-            <label for="name">姓名 *</label>
-            <input id="name" name="name" autocomplete="name" required>
-          </div>
-          <div class="field">
-            <label for="phone">手机 / 微信 *</label>
-            <input id="phone" name="phone" autocomplete="tel" required>
-          </div>
-          <div class="field">
-            <label for="company">公司 / 机构 *</label>
-            <input id="company" name="company" autocomplete="organization" required>
-          </div>
-          <div class="field">
-            <label for="role">身份 / 职位 *</label>
-            <select id="role" name="role" required>
-              <option value="">请选择</option>
-              <option>品牌方 / 制造商</option>
-              <option>跨境服务商</option>
-              <option>渠道商 / 代理商</option>
-              <option>投资机构 / 产业园区</option>
-              <option>创业者 / 项目负责人</option>
-              <option>其他</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="topic">最关注的出海方向 *</label>
-            <select id="topic" name="topic" required>
-              <option value="">请选择</option>
-              <option>中东市场</option>
-              <option>东南亚市场</option>
-              <option>欧美市场</option>
-              <option>展会获客与转化</option>
-              <option>渠道代理与本地合作</option>
-              <option>合规、收款与履约</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="email">邮箱</label>
-            <input id="email" name="email" type="email" autocomplete="email">
-          </div>
-          <div class="field">
-            <label for="city">所在城市</label>
-            <input id="city" name="city" placeholder="例如：成都 / 深圳 / 上海">
-          </div>
-          <div class="field">
-            <label for="interest">想对接的资源</label>
-            <textarea id="interest" name="interest" placeholder="例如：中东渠道、展会资源、投资人、支付物流、本地服务商"></textarea>
-          </div>
-          <div class="field">
-            <label for="note">补充说明</label>
-            <textarea id="note" name="note" placeholder="可以写下你的项目、产品、目标市场或希望现场讨论的问题"></textarea>
-          </div>
+          <div class="field"><label for="name">姓名 *</label><input id="name" name="name" autocomplete="name" required></div>
+          <div class="field"><label for="phone">手机 / 微信 *</label><input id="phone" name="phone" autocomplete="tel" required></div>
+          <div class="field"><label for="company">公司 / 机构 *</label><input id="company" name="company" autocomplete="organization" required></div>
+          <div class="field"><label for="role">身份 / 职位 *</label><select id="role" name="role" required><option value="">请选择</option><option>出海企业家</option><option>海外嘉宾</option><option>AI科技企业代表</option><option>高净值客户/投资人</option><option>资源合作伙伴</option><option>其他</option></select></div>
+          <div class="field"><label for="topic">最关注的主题 *</label><select id="topic" name="topic" required><option value="">请选择</option><option>AI+文旅出海</option><option>中东市场与猎鹰展资源</option><option>品牌国际化与文化出海</option><option>高端消费与企业家圈层</option><option>渠道与商务合作</option></select></div>
+          <div class="field"><label for="email">邮箱</label><input id="email" name="email" type="email" autocomplete="email"></div>
+          <div class="field"><label for="city">所在城市</label><input id="city" name="city"></div>
+          <div class="field"><label for="interest">希望链接的资源</label><textarea id="interest" name="interest"></textarea></div>
+          <div class="field"><label for="note">补充说明</label><textarea id="note" name="note"></textarea></div>
           <p class="note">* 为必填项。提交后工作人员会根据报名信息联系确认。</p>
           <button class="submit" type="submit">提交报名</button>
           <p class="status" id="status" role="status" aria-live="polite"></p>
         </form>
       </section>
 
+      <section class="section success-panel" id="successPanel" hidden>
+        <h2>报名信息已收到</h2>
+        <p>工作人员将根据报名信息与您联系，确认活动席位。</p>
+        <a id="completeButton" href="/">完成并返回猎鹰展主页</a>
+      </section>
       <a class="footer-link" href="/">返回猎鹰展专题页</a>
     </main>
   </div>
-
   <script>
     const form = document.getElementById('salonForm');
     const status = document.getElementById('status');
-    const storageKey = 'salon-registrations';
-
+    const successPanel = document.getElementById('successPanel');
     function setStatus(message, type) {
       status.textContent = message;
       status.className = `status ${type || ''}`.trim();
     }
-
-    function readRegistrations() {
-      try {
-        return JSON.parse(localStorage.getItem(storageKey) || '[]');
-      } catch {
-        return [];
-      }
-    }
-
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       const requiredFields = Array.from(form.querySelectorAll('[required]'));
-      const missing = requiredFields.filter((field) => !field.value.trim());
-      if (missing.length) {
-        missing[0].focus();
-        const label = form.querySelector(`label[for="${missing[0].id}"]`);
+      const missing = requiredFields.find((field) => !field.value.trim());
+      if (missing) {
+        missing.focus();
+        const label = form.querySelector(`label[for="${missing.id}"]`);
         setStatus(`请先填写：${label ? label.textContent.replace(' *', '') : '必填项'}`, 'error');
         return;
       }
-
       const payload = Object.fromEntries(new FormData(form).entries());
-      payload.localId = `SALON-LOCAL-${Date.now()}`;
-      payload.submittedAt = new Date().toISOString();
-
-      const local = readRegistrations();
-      local.unshift(payload);
-      localStorage.setItem(storageKey, JSON.stringify(local));
-
-      if (location.protocol === 'file:') {
-        form.reset();
-        setStatus(`报名已记录，编号 ${payload.localId}。本地预览不会发送到服务器，上线后会提交到接口。`, 'success');
-        return;
-      }
-
       setStatus('正在提交报名...', '');
       fetch('/api/salon-registrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      })
-        .then((response) => {
-          if (!response.ok) throw new Error(`提交失败：${response.status}`);
-          return response.json();
-        })
-        .then((result) => {
-          form.reset();
-          setStatus(`报名已提交，编号 ${result.registrationId || payload.localId}。工作人员会尽快联系确认。`, 'success');
-        })
-        .catch(() => {
-          setStatus('暂时无法提交到服务器。你的信息已保存在当前浏览器，可稍后重试。', 'error');
-        });
+      }).then((response) => {
+        if (!response.ok) throw new Error(`提交失败：${response.status}`);
+        return response.json();
+      }).then(() => {
+        form.reset();
+        form.hidden = true;
+        successPanel.hidden = false;
+        document.querySelector('#completeButton').focus();
+      }).catch(() => setStatus('暂时无法提交，请稍后重试。', 'error'));
     });
   </script>
 </body>
